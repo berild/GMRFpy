@@ -98,7 +98,7 @@ class StatIso:
         self.Q_fac = cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.log(np.array([-1,0.5,2]))):
+    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([-1,0.5,2])):
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','1000','10000'])
         rs = np.array([1,10,100])
