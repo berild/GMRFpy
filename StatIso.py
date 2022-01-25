@@ -75,7 +75,7 @@ class StatIso:
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
             mods = np.array(['SI','SA','NA1','NA2'])
-            dhos = np.array(['100','1000','10000'])
+            dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
             file = './fits/' + mods[simmod-1] + '-SI-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
@@ -100,7 +100,7 @@ class StatIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([-1,0.5,2])):
         mods = np.array(['SI','SA','NA1','NA2'])
-        dhos = np.array(['100','1000','10000'])
+        dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
         self.data = (tmp['data']*1)[tmp['locs'+dhos[dho-1]],:(rs[r-1])]
@@ -222,7 +222,7 @@ class StatIso:
         else:
             num = max(mods) + 1 
         self.data = self.sample(n=100)
-        np.savez('./simulations/SI-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs1000 = np.random.choice(np.arange(self.n), 1000, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False))
+        np.savez('./simulations/SI-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
         
 
