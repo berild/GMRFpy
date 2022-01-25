@@ -17,7 +17,7 @@ def main(argv):
             sys.exit()
         else:
             print("Simulating from " + modstr[int(argv[0])-1] + "...")
-            mod = spde(model = argv[0])
+            mod = spde(model = int(argv[0]))
             res = np.zeros(100)
             for i in range(100):
                 res[i] = mod.sim()
