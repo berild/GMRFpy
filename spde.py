@@ -11,7 +11,7 @@ import plotly.graph_objs as go
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 inla = importr("INLA")
-robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
+#robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
 
 def is_int(val):
     try:
