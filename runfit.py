@@ -7,7 +7,13 @@ from functools import partial
 
 
 def fit(version,mod,data,vers):
-        return(mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False))
+    try: 
+        res = mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False)
+    except:
+        print("Model "+ mod + " data " + data + " dho " + vers[version,1]+ " r " + vers[version,2] + " num " + vers[version,0] + " crashed")
+        return(False)
+    else:
+        return(res)
 
 def fitSelf(model):
     vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
