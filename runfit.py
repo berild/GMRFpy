@@ -19,9 +19,9 @@ def fitSelf(model):
 
 def fitOther(model,data):
     vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
-    pool = mp.Pool(20)
     mod = spde(model = model)
-    res = [pool.apply(fit,args=(i, mod, data,vers)) for i in range(vers.shape[0])]
+    fit_ = partial(fit, mod=mod, data = data, vers=vers)
+    res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
 def main(argv):
