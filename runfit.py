@@ -32,7 +32,7 @@ def findFits(model, data):
     r = ["1","10","100"]
     mods = []
     print(vers.shape)
-    for file in os.listdir("./simulations/"):
+    for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
             tmp = file.split('-')[2:]
             tar = np.array([int(tmp.split("-")[2].split(".")[0]),int(np.where(dho == tmp.split("-")[0][3:])[0]) + 1,  int(np.where(r == tmp.split("-")[1][1:])[0])+1 ]) # num , dho , r
