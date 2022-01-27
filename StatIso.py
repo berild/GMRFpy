@@ -98,7 +98,9 @@ class StatIso:
         self.Q_fac = cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([-1,0.5,2])):
+    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
+        if par is None:
+            np.array([-1,0.5,2])
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
@@ -114,7 +116,9 @@ class StatIso:
         return(True)
 
     # implement S either locations, the array or not specified but data must be nans
-    def fit(self,data, r, S = None, par = np.array([np.log(1.1),np.log(1.1),np.log(1.1)]),verbose = False, grad = True):
+    def fit(self,data, r, S = None, par = None,verbose = False, grad = True):
+        if par is None:
+            par = np.array([-1,0.5,2])
         assert S is not None
         self.data = data
         self.r = r  

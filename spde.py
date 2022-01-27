@@ -95,7 +95,7 @@ class spde:
         self.mod.loadFit(simmod = simmod, dho = dho , r = r, num = num , file=file)
 
     # fix par for models
-    def fitTo(self,simmod,dho,r,num,model = None,verbose = False, grad = True,par = np.log(np.array([1.1,1.1,1.1]))):
+    def fitTo(self,simmod,dho,r,num,model = None,verbose = False, grad = True,par = None):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
@@ -106,7 +106,7 @@ class spde:
         return(success)
         
     # fix par for models
-    def fit(self,data,r,S, par = np.array([np.log(1.1),np.log(1.1)],np.log(1.1)),model = None,verbose = False, grad = True):
+    def fit(self,data,r,S, par = None,model = None,verbose = False, grad = True):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
