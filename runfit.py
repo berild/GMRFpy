@@ -31,12 +31,13 @@ def findFits(model, data):
     dho = ["100","10000","27000"]
     r = ["1","10","100"]
     mods = []
+    print(vers.shape)
     for file in os.listdir("./simulations/"):
         if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
             tmp = file.split('-')[2:]
             tar = np.array([int(tmp.split("-")[2].split(".")[0]),int(np.where(dho == tmp.split("-")[0][3:])[0]) + 1,  int(np.where(r == tmp.split("-")[1][1:])[0])+1 ]) # num , dho , r
             vers = np.delete(vers,np.where((vers == tar).all(axis=1))[0],axis=0)
-    return(vers)
+    return(vers.shape)
 
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic"]
