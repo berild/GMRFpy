@@ -15,16 +15,8 @@ def fit(version,mod,data,vers):
     else:
         return(res)
 
-def fitSelf(model):
-    vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
-    mod = spde(model = model)
-    fit_ = partial(fit, mod=mod, data = model, vers=vers)
-    res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in range(vers.shape[0]))
-    return(res)
-    
-
-def fitOther(model,data):
-    vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
+def fitPar(model,data,lower, upper):
+    vers = np.array([[i,j,k] for i in range(lower,upper) for j in range(1,4) for k in range(1,4)])
     mod = spde(model = model)
     fit_ = partial(fit, mod=mod, data = data, vers=vers)
     res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in range(vers.shape[0]))
@@ -32,30 +24,25 @@ def fitOther(model,data):
 
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic"]
-    if (len(argv)==0):
-        print("No simulation model specified...exiting...")
-        sys.exit(2)
-    elif (len(argv)==1):
-        if ((int(argv[0])<1) or (int(argv[0])>4)):
-            print("Incorrect simulation model...exiting...")
-            sys.exit()
-        else:
-            print("Fitting the " + modstr[int(argv[0])-1] + " model to own data...")
-            res = fitSelf(int(argv[0]))
-            print(sum(res)==900)
-            return(sum(res)==900)
-    elif (len(argv)==2):
-        if ((int(argv[0])<1) or (int(argv[0])>4)):
-            print("Incorrect simulation model...exiting...")
-            sys.exit()
-        else:
-            print("Fitting the " + modstr[int(argv[0])-1] + " model to " + modstr[int(argv[1])-1] + " data")
-            res = fitOther(int(argv[0]),int(argv[1]))
-            print(sum(res)==900)
-            return(sum(res)==900)
+    mods = None
+    bonds = np.array(['0','100'])
+    if "-" in argv[0]:
+        mods = argv[0].split('-',2)
     else:
-        print("To many input arguments...")
+        mods = np.array([argv[0],argv[0]])
+    if len(argv)==2:
+        if "-" in argv[1]:
+            bound = argv[1].split('-',2)
+        else:
+            print("Incorrect upper and lowers bounds...exiting...")
+            sys.exit()
+    if mods is None:
+        print('Incorrect input models...exiting...')
         sys.exit()
+    else:
+        print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
+        res = fitPar(int(mods[0]),int(mods[1]))
+        return(res)
 
 
 if __name__ == "__main__":
