@@ -37,7 +37,8 @@ def findFits(model, data):
             tmp = file.split('-')[2:]
             tar = np.array([int(tmp.split("-")[2].split(".")[0]),int(np.where(dho == tmp.split("-")[0][3:])[0]) + 1,  int(np.where(r == tmp.split("-")[1][1:])[0])+1 ]) # num , dho , r
             vers = np.delete(vers,np.where((vers == tar).all(axis=1))[0],axis=0)
-    return(vers.shape)
+    print(vers.shape)
+    return(vers)
 
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic"]
