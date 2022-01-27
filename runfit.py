@@ -4,6 +4,8 @@ import numpy as np
 from spde import spde
 from joblib import Parallel, delayed
 from functools import partial
+from datetime import datetime
+from tqdm import tqdm
 
 
 def fit(version,mod,data,vers):
