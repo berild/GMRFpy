@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 from functools import partial
 from datetime import datetime
 from tqdm import tqdm
+import os
 
 
 def fit(version,mod,data,vers):
@@ -17,33 +18,39 @@ def fit(version,mod,data,vers):
     else:
         return(res)
 
-def fitPar(model,data,lower, upper):
-    vers = np.array([[i,j,k] for i in range(lower,upper) for j in range(1,4) for k in range(1,4)])
+def fitPar(model,data):
+    vers = findFits(model,data)
     mod = spde(model = model)
     fit_ = partial(fit, mod=mod, data = data, vers=vers)
-    res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in range(vers.shape[0]))
+    res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in tqdm(range(vers.shape[0])))
     return(res)
+
+def findFits(model, data):
+    vers = np.array([[i,j,k] for i in range(0,100) for j in range(1,4) for k in range(1,4)])
+    modstr = ["SI", "SA", "NA"]
+    dho = ["100","10000","27000"]
+    r = ["1","10","100"]
+    mods = []
+    for file in os.listdir("./simulations/"):
+        if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
+            tmp = file.split('-')[2:]
+            tar = np.array([int(tmp.split("-")[2].split(".")[0]),int(np.where(dho == tmp.split("-")[0][3:])[0]) + 1,  int(np.where(r == tmp.split("-")[1][1:])[0])+1 ]) # num , dho , r
+            vers = np.delete(vers,np.where((vers == tar).all(axis=1))[0],axis=0)
+    return(vers)
 
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic"]
     mods = None
-    bonds = np.array(['0','100'])
     if "-" in argv[0]:
         mods = argv[0].split('-',2)
     else:
         mods = np.array([argv[0],argv[0]])
-    if len(argv)==2:
-        if "-" in argv[1]:
-            bound = argv[1].split('-',2)
-        else:
-            print("Incorrect upper and lowers bounds...exiting...")
-            sys.exit()
     if mods is None:
         print('Incorrect input models...exiting...')
         sys.exit()
     else:
         print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
-        res = fitPar(int(mods[0]),int(mods[1]),int(bonds[0]),int(bonds[1]))
+        res = fitPar(int(mods[0]),int(mods[1]))
         return(res)
 
 
