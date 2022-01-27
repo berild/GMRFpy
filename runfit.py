@@ -35,6 +35,7 @@ def findFits(model, data):
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
             tmp = file.split('-')[2:]
+            print(tmp)
             tdho = int(np.where(dho == tmp[0][3:])[0]) + 1
             tnum = int(tmp[2].split(".")[0])
             tr = int(np.where(r==tmp[1][1:])[0])+1
