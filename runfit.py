@@ -41,7 +41,7 @@ def main(argv):
         sys.exit()
     else:
         print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
-        res = fitPar(int(mods[0]),int(mods[1]))
+        res = fitPar(int(mods[0]),int(mods[1]),int(bonds[0]),int(bonds[1]))
         return(res)
 
 
