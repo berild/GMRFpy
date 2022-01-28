@@ -22,7 +22,7 @@ def fitPar(model,data):
     vers = findFits(model,data)
     mod = spde(model = model)
     fit_ = partial(fit, mod=mod, data = data, vers=vers)
-    res = Parallel(n_jobs=20)(delayed(fit_)(i) for i in tqdm(range(vers.shape[0])))
+    res = Parallel(n_jobs=40)(delayed(fit_)(i) for i in tqdm(range(vers.shape[0])))
     return(res)
 
 def findFits(model, data):
