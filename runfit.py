@@ -28,7 +28,6 @@ def findFits(model, data):
     modstr = np.array(["SI", "SA", "NA"])
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
-    mods = []
     print(vers.shape)
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
