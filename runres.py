@@ -3,14 +3,14 @@ import numpy as np
 import os
 
 def print1(res):
-    lines = list(["\u03BA       ","\u03B3       ","\u03C4       "])
+    lines = list(["\u03BA  -1.61 ","\u03B3   0.92 ","\u03C4   4.61 "])
     for j in range(3):
         lines.append("")
         for i in range(9):
             lines[j] = lines[j] + "|  %5.2f"%res[0][j,i] + "(%.2f) "%res[1][j,i]
 
-    print("DHO     |                     100                    |                   10000                    |                   27000           \n")
-    print("Real.   |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
+    print("DHO      |                     100                    |                   10000                    |                   27000           \n")
+    print("Real.    |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
     print(lines[0])
     print(lines[1])
     print(lines[2])
