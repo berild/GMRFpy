@@ -34,8 +34,7 @@ def main(argv):
     count = 0
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[model-1]):
-            ftmp = (np.load("./fits/"+file)['par']*1)
-            par = ftmp['par']*1
+            par = (np.load("./fits/"+file)['par']*1)
             tmp = file.split('-')[2:]
             tdho = np.where(dho == tmp[0][3:])[0][0] + 1
             tr = np.where(r==tmp[1][1:])[0][0] + 1
