@@ -7,10 +7,10 @@ def print1(res):
     for j in range(3):
         lines.append("")
         for i in range(9):
-            lines[j] = lines[j] + "|  %.2f"%res[0][j,i] + "(%.2f) "%res[1][j,i] 
+            lines[j] = lines[j] + "|  %5.2f"%res[0][j,i] + "(%.2f) "%res[1][j,i]
 
-    print("DHO     |                    100                  |                   10000                 |                   27000          \n")
-    print("Real.   |      1      |      10     |      100    |      1      |      10     |     100     |      1      |      10     |      100  \n")
+    print("DHO     |                     100                    |                   10000                    |                   27000           \n")
+    print("Real.   |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
     print(lines[0])
     print(lines[1])
     print(lines[2])
@@ -45,6 +45,7 @@ def main(argv):
             res[0][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1)
             res[1][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].std(axis=1)
     np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
+    print1(res)
     return(True)
 
 if __name__ == "__main__":
