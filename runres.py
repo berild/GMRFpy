@@ -43,7 +43,7 @@ def main(argv):
         for j in range(npars): #r
             res[0][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1)
             res[1][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].std(axis=1)
-    print(model)
+    print(res)
     return(res)
 
 if __name__ == "__main__":
