@@ -29,12 +29,12 @@ def main(argv):
         if file.startswith(modstr[model-1]+"-"+modstr[model-1]):
             count = count + 1
             if count == 1:
-                npars = (np.load(file)['par']*1).shape[0]
+                npars = (np.load("./fits/"+file)['par']*1).shape[0]
     pars = np.zeros((count,npars + 3))
     count = 0
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[model-1]):
-            ftmp = (np.load(file)['par']*1).shape[0]
+            ftmp = (np.load("./fits/"+file)['par']*1).shape[0]
             par = ftmp['par']*1
             tmp = file.split('-')[2:]
             tdho = np.where(dho == tmp[0][3:])[0][0] + 1
