@@ -2,7 +2,7 @@ import sys, getopt
 import numpy as np
 import multiprocessing as mp
 from spde import spde
-
+import os
 
 def print1(res):
     lines = list(["\u03BA       ","\u03B3       ","\u03C4       "])
