@@ -38,7 +38,7 @@ def main(argv):
             tmp = file.split('-')[2:]
             tdho = np.where(dho == tmp[0][3:])[0][0] + 1
             tr = np.where(r==tmp[1][1:])[0][0] + 1
-            pars[count,:] = np.hstack(par,tdho,tr)
+            pars[count,:] = np.hstack([par,tdho,tr])
             count = count + 1
     res = list([np.zeros((npars,9)),np.zeros((npars,9))])
     for i in range(npars): #dho
