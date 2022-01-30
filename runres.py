@@ -38,13 +38,14 @@ def main(argv):
             tr = np.where(r==tmp[1][1:])[0][0] + 1
             pars[count,:] = np.hstack([par,tdho,tr])
             count = count + 1
+    np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
     res = list([np.zeros((npars,9)),np.zeros((npars,9))])
     for i in range(npars): #dho
         for j in range(npars): #r
             res[0][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1)
             res[1][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].std(axis=1)
-    print(res)
-    return(res)
+    np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
+    return(True)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
