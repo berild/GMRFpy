@@ -1,7 +1,5 @@
 import sys, getopt
 import numpy as np
-import multiprocessing as mp
-from spde import spde
 import os
 
 def print1(res):
@@ -30,7 +28,7 @@ def main(argv):
             count = count + 1
             if count == 1:
                 npars = (np.load("./fits/"+file)['par']*1).shape[0]
-    pars = np.zeros((count,npars + 3))
+    pars = np.zeros((count,npars + 2))
     count = 0
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[model-1]):
