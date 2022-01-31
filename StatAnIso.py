@@ -85,7 +85,7 @@ class StatAnIso:
         assert(self.Q_fac != -1)
         self.mvar = rqinv(self.Q).diagonal()
         
-    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,par = None):
+    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-3,par = None):
         if par is None:
             par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
         self.data = data
@@ -180,7 +180,7 @@ class StatAnIso:
         else:
             num = max(mods) + 1 
         self.data = self.sample(n=100)
-        np.savez('./simulations/SA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs1000 = np.random.choice(np.arange(self.n), 1000, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False))
+        np.savez('./simulations/SA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
     def setQ(self,par = None):

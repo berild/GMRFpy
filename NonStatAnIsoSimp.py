@@ -169,7 +169,7 @@ class NonStatAnIsoSimp:
         else:
             num = max(mods) + 1 
         self.data = self.sample(n=100)
-        np.savez('./simulations/NA1-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs1000 = np.random.choice(np.arange(self.n), 1000, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False))
+        np.savez('./simulations/NA1-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
     def setQ(self,par = None):
