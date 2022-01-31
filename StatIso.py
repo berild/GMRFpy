@@ -97,7 +97,7 @@ class StatIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
-            par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
+            par = np.array([-1,0.5,2])
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
@@ -115,7 +115,7 @@ class StatIso:
     # implement S either locations, the array or not specified but data must be nans
     def fit(self,data, r, S = None, par = None,verbose = False, grad = True):
         if par is None:
-            par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
+            par = np.array([-1,0.5,2])
         assert S is not None
         self.data = data
         self.r = r  
