@@ -152,6 +152,9 @@ class StatAnIso:
         self.Q_fac = cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
+    def getPars(self):
+        return(np.hstack([self.kappa,self.gamma1,self.gamma2,self.gamma3,self.rho1,self.rho2,self.rho3,self.tau]))
+
     def sample(self,n = 1, par = None):
         if par is None:
             assert(self.kappa is not None and self.gamma1 is not None and self.gamma2 is not None and self.gamma3 is not None and self.rho1 is not None and self.rho2 is not None and self.rho3 is not None and self.sigma is not None)
@@ -332,9 +335,9 @@ class StatAnIso:
                 "\u03C1_1 = %2.2f"%(par[4]),"\u03C1_2 = %2.2f"%(par[5]),"\u03C1_3 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
             return((like,jac))
         else: 
-            like = 1/2*Q_fac.logdet() + self.S.shape[0]*par[7]/2 - 1/2*Q_c_fac.logdet() 
+            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
             for j in range(self.r):
-                like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[7])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))/self.r
+                like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[7])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
             like = -like/(self.r * self.S.shape[0])
             self.like = like
             self.opt_steps = self.opt_steps + 1
