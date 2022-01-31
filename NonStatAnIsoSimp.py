@@ -108,14 +108,14 @@ class NonStatAnIsoSimp:
         dhos = np.array(['100','1000','10000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
-        self.data = (tmp['data']*1)[tmp['locs'+dhos[dho-1]],:(rs[r-1])]
+        self.data = (tmp['data']*1)[np.sort(tmp['locs'+dhos[dho-1]]*1),:(rs[r-1])]
         self.r = rs[r-1]
         self.S = np.zeros((self.n))
-        self.S[tmp['locs'+dhos[dho-1]]*1] = 1
+        self.S[np.sort(tmp['locs'+dhos[dho-1]]*1)] = 1
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez('./fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], like = res['fun'],  jac = res['jac'], S = tmp['locs'+dhos[dho-1]]*1)
+        np.savez('./fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], like = res['fun'],  jac = res['jac'], S = self.S)
         return(True)
 
     def loadFit(self, simmod, dho, r, num, file = None):
@@ -126,10 +126,7 @@ class NonStatAnIsoSimp:
             file = './fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
-        self.S = np.zeros((self.grid.M*self.grid.N*self.grid.P))
-        self.S[fitmod['S']*1] = 1
-        self.S = sparse.diags(self.S)
-        self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
+        self.S = fitmod['S']*1
         par =fitmod['par']*1
         self.kappa = par[0:27]
         self.gamma = par[27:54]

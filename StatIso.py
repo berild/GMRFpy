@@ -80,10 +80,7 @@ class StatIso:
             file = './fits/' + mods[simmod-1] + '-SI-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
-        self.S = np.zeros((self.grid.M*self.grid.N*self.grid.P))
-        self.S[fitmod['S']*1] = 1
-        self.S = sparse.diags(self.S)
-        self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
+        self.S = fitmod['S']*1
         par =fitmod['par']*1
         self.kappa = par[0]
         self.gamma = par[1]
