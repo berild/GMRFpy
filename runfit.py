@@ -11,7 +11,7 @@ def fit(version,mod,data,vers):
     try: 
         res = mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False)
     except:
-        print("Model "+ mod.model + " data " + data + " dho " + vers[version,1]+ " r " + vers[version,2] + " num " + vers[version,0] + " crashed")
+        print("Model "+ str(mod.model) + " data " + str(data) + " dho " + str(vers[version,1])+ " r " + str(vers[version,2]) + " num " + str(vers[version,0]) + " crashed")
         return(False)
     else:
         return(res)
