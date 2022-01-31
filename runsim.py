@@ -3,7 +3,7 @@ import sys, getopt
 import numpy as np
 import multiprocessing as mp
 from spde import spde
-
+from joblib import Parallel, delayed
 
 
 def main(argv):
@@ -18,10 +18,8 @@ def main(argv):
         else:
             print("Simulating from " + modstr[int(argv[0])-1] + "...")
             mod = spde(model = int(argv[0]))
-            res = np.zeros(100)
-            for i in range(100):
-                res[i] = mod.sim()
-            return((res.sum()==100))
+            res = Parallel(n_jobs=30,verbose = 100)(delayed(mod.fit) for i in range(100))
+            return(res)
     else:
         print("Incorrect input arguments...")
         sys.exit()
