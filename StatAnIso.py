@@ -85,8 +85,7 @@ class StatAnIso:
         assert(self.Q_fac != -1)
         self.mvar = rqinv(self.Q).diagonal()
         
-    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,
-            par = np.array([np.log(1.1),np.log(1.1),np.log(1.2),np.log(1.3),0.2,0.2,0.2,5])):
+    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,par = None):
         self.data = data
         self.r = r
         self.S = S
@@ -108,7 +107,9 @@ class StatAnIso:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.log(np.array([1.1,1.1,1.1]))):
+    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])):
+        if par is None:
+            np.array([-1,0.5,2])
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','1000','10000'])
         rs = np.array([1,10,100])
