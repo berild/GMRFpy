@@ -113,7 +113,7 @@ class StatAnIso:
         if par is None:
             par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
         mods = np.array(['SI','SA','NA1','NA2'])
-        dhos = np.array(['100','1000','10000'])
+        dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
         self.data = (tmp['data']*1)[np.sort(tmp['locs'+dhos[dho-1]]*1),:(rs[r-1])]
@@ -130,7 +130,7 @@ class StatAnIso:
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
             mods = np.array(['SI','SA','NA1','NA2'])
-            dhos = np.array(['100','1000','10000'])
+            dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
             file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
