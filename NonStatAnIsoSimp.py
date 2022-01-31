@@ -62,6 +62,9 @@ class NonStatAnIsoSimp:
         self.like = 10000
         self.jac = np.array([-100]*136)
 
+    def getPars(self):
+        return(np.hstack([self.kappa,self.gamma,self.vx,self.vy,self.vz,self.tau]))
+
     def load(self):
         simmod = np.load("./simmodels/NA1.npz")
         self.kappa = simmod['kappa']*1
