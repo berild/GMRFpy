@@ -86,6 +86,8 @@ class StatAnIso:
         self.mvar = rqinv(self.Q).diagonal()
         
     def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,par = None):
+        if par is None:
+            par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
         self.data = data
         self.r = r
         self.S = S
@@ -107,9 +109,9 @@ class StatAnIso:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])):
+    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
-            np.array([-1,0.5,2])
+            par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','1000','10000'])
         rs = np.array([1,10,100])
@@ -121,7 +123,7 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez('./fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], like = res['fun'],  jac = res['jac'], S = self.S)
+        np.savez('./fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = self.S)
         return(True)
 
     # maybe add some assertions
