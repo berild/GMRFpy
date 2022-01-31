@@ -29,9 +29,12 @@ def findFits(model, data):
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
     print(vers.shape)
+    print(model)
+    print(data)
     for file in os.listdir("./fits/"):
         if file.startswith(modstr[model-1]+"-"+modstr[data-1]):
             tmp = file.split('-')[2:]
+            print(tmp)
             tdho = np.where(dho == tmp[0][3:])[0][0] + 1
             tnum = int(tmp[2].split(".")[0])
             tr = np.where(r==tmp[1][1:])[0][0]+1
