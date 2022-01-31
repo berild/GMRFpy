@@ -18,7 +18,7 @@ def main(argv):
         else:
             print("Simulating from " + modstr[int(argv[0])-1] + "...")
             mod = spde(model = int(argv[0]))
-            res = Parallel(n_jobs=30,verbose = 100)(delayed(mod.fit)() for i in range(100))
+            res = Parallel(n_jobs=30,verbose = 100)(delayed(mod.sim)() for i in range(100))
             return(res)
     else:
         print("Incorrect input arguments...")
