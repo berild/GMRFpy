@@ -85,9 +85,10 @@ class StatAnIso:
         assert(self.Q_fac != -1)
         self.mvar = rqinv(self.Q).diagonal()
         
-    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-3,par = None):
+    def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
         if par is None:
             par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
+        assert S is not None
         self.data = data
         self.r = r
         self.S = S
@@ -95,9 +96,9 @@ class StatAnIso:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = tol)
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
         else:    
-            res = minimize(self.logLike, x0 = par, tol = tol)
+            res = minimize(self.logLike, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
@@ -111,7 +112,7 @@ class StatAnIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
-            par = np.array([-0.5,-0.5,-0.5,0.5,-0.5,-1,-1,2])
+            par = np.array([-1,0.5,0.5,0.5,0.5,-1,-1,2])
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
