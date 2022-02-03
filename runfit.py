@@ -21,7 +21,7 @@ def fitPar(model,data):
     print(str(vers.shape[0])+" of 900")
     mod = spde(model = model)
     fit_ = partial(fit, mod=mod, data = data, vers=vers)
-    res = Parallel(n_jobs=20,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
+    res = Parallel(n_jobs=15,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
 def findFits(model, data):
