@@ -1,10 +1,10 @@
 import sys, getopt
 import numpy as np
 import os
+from spde import spde
 
 def print1(res):
     lines = list(["\u03BA ","\u03B3  ","\u03C4 "])
-    true = np.load(file = './simmodels/SI.npz')['par']*1
     for j in range(3):
         lines.append("")
         for i in range(9):
@@ -41,7 +41,9 @@ def main(argv):
             count = count + 1
     np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
     res = list([np.zeros((npars,9)),np.zeros((npars,9))])
-    truth = np.load(file = './simmodels/SI.npz')['par']*1
+    mod = spde(model = model)
+    mod.load(simple = True)
+    truth = mod.getPars()
     for i in range(3): #dho
         for j in range(3): #r
             res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1) - truth
