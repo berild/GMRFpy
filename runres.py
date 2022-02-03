@@ -4,13 +4,13 @@ import os
 from spde import spde
 
 def print1(res):
-    lines = list(["\u03BA ","\u03B3  ","\u03C4 "])
+    lines = list(["\u03BA      ","\u03B3      ","\u03C4      "])
     for j in range(3):
         lines.append("")
         for i in range(9):
-            lines[j] = lines[j] + "|  %5.3f"%res[0][j,i] + "(%.3f) "%res[1][j,i]
+            lines[j] = lines[j] + "|  %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
 
-    print("DHO  |                     100                    |                   10000                    |                   27000           \n")
+    print("DHO    |                     100                    |                   10000                    |                   27000           \n")
     print("Real.  |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
     print(lines[0])
     print(lines[1])
