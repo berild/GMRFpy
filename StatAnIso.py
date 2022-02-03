@@ -63,7 +63,7 @@ class StatAnIso:
         self.like = 10000
         self.jac = np.array([-100]*8)
 
-    def load(self):
+    def load(self,simple = False):
         simmod = np.load("./simmodels/SA.npz")
         self.kappa = simmod['kappa']*1
         self.gamma1 = simmod['gamma1']*1
@@ -74,16 +74,17 @@ class StatAnIso:
         self.rho3 = simmod['rho3']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
-        self.v, self.w = self.getVW(np.array([self.gamma2,self.gamma3,self.rho1,self.rho2,self.rho3]))
-        Hs = np.exp(self.gamma1)*np.eye(3) + self.v[:,np.newaxis]*self.v[np.newaxis,:]  + self.w[:,np.newaxis]*self.w[np.newaxis,:]  + np.zeros((self.n,6,3,3))
-        Dk =  sparse.diags([np.exp(self.kappa)]*(self.n)) 
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        A_mat = self.Dv@Dk - Ah
-        self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = self.cholesky(self.Q)
-        assert(self.Q_fac != -1)
-        self.mvar = rqinv(self.Q).diagonal()
+        if not simple:
+            self.v, self.w = self.getVW(np.array([self.gamma2,self.gamma3,self.rho1,self.rho2,self.rho3]))
+            Hs = np.exp(self.gamma1)*np.eye(3) + self.v[:,np.newaxis]*self.v[np.newaxis,:]  + self.w[:,np.newaxis]*self.w[np.newaxis,:]  + np.zeros((self.n,6,3,3))
+            Dk =  sparse.diags([np.exp(self.kappa)]*(self.n)) 
+            A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+            Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
+            A_mat = self.Dv@Dk - Ah
+            self.Q = A_mat.transpose()@self.iDv@A_mat
+            self.Q_fac = self.cholesky(self.Q)
+            assert(self.Q_fac != -1)
+            self.mvar = rqinv(self.Q).diagonal()
         
     def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
         if par is None:
