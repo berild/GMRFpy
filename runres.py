@@ -3,14 +3,15 @@ import numpy as np
 import os
 
 def print1(res):
-    lines = list(["\u03BA  -1.61 ","\u03B3   0.92 ","\u03C4   4.61 "])
+    lines = list(["\u03BA ","\u03B3  ","\u03C4 "])
+    true = np.load(file = './simmodels/SI.npz')['par']*1
     for j in range(3):
         lines.append("")
         for i in range(9):
-            lines[j] = lines[j] + "|  %5.2f"%res[0][j,i] + "(%.2f) "%res[1][j,i]
+            lines[j] = lines[j] + "|  %5.3f"%res[0][j,i] + "(%.3f) "%res[1][j,i]
 
-    print("DHO      |                     100                    |                   10000                    |                   27000           \n")
-    print("Real.    |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
+    print("DHO  |                     100                    |                   10000                    |                   27000           \n")
+    print("Real.  |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
     print(lines[0])
     print(lines[1])
     print(lines[2])
@@ -40,10 +41,11 @@ def main(argv):
             count = count + 1
     np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
     res = list([np.zeros((npars,9)),np.zeros((npars,9))])
-    for i in range(npars): #dho
-        for j in range(npars): #r
-            res[0][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1)
-            res[1][:,(i)*npars + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].std(axis=1)
+    truth = np.load(file = './simmodels/SI.npz')['par']*1
+    for i in range(3): #dho
+        for j in range(3): #r
+            res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1) - truth
+            res[1][:,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars] - truth)**2,axis = 1)
     np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
     print1(res)
     return(True)
