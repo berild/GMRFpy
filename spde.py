@@ -75,7 +75,7 @@ class spde:
         else:
             print("Not a implemented model (1-4)...")
 
-    def load(self,model=None):
+    def load(self,model=None,simple = False):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
@@ -83,7 +83,7 @@ class spde:
                 print("Loading pre-defined model",self.model)
         else:
             self.define(model = model)
-        self.mod.load()
+        self.mod.load(simple = simple)
 
     def loadFit(self, simmod, dho, r, num, model = None, file = None):
         if model is None:
