@@ -56,20 +56,21 @@ class StatIso:
         self.like = 10000
         self.jac = np.array([-100]*3)
     
-    def load(self):
+    def load(self,simple = False):
         simmod = np.load("./simmodels/SI.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
-        Hs = np.exp(self.gamma)*np.eye(3) + np.zeros((self.n,6,3,3))
-        Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        A_mat = self.Dv@Dk - Ah
-        self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
-        self.mvar = rqinv(self.Q).diagonal()
+        if not simple:
+            Hs = np.exp(self.gamma)*np.eye(3) + np.zeros((self.n,6,3,3))
+            Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
+            A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+            Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
+            A_mat = self.Dv@Dk - Ah
+            self.Q = A_mat.transpose()@self.iDv@A_mat
+            self.Q_fac = cholesky(self.Q)
+            self.mvar = rqinv(self.Q).diagonal()
     
     # maybe add some assertions
     def loadFit(self, simmod, dho, r, num, file = None):
