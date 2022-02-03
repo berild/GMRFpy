@@ -85,8 +85,9 @@ class NonStatAnIsoSimp:
             assert(self.Q_fac != -1)
             self.mvar = rqinv(self.Q).diagonal()
 
-    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,
-            par = np.array([1.1]*136)):
+    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-4,par = None):
+        if par is None:
+            par = np.array([-0.5]*136)
             #mod3: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), sigma(135)
         self.data = data
         self.r = r
@@ -107,7 +108,9 @@ class NonStatAnIsoSimp:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = np.array([1.1]*136)):
+    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
+        if par is None:
+            par = np.array([-0.5]*136)
         mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','1000','10000'])
         rs = np.array([1,10,100])
