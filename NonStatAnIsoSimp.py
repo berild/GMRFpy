@@ -65,7 +65,7 @@ class NonStatAnIsoSimp:
     def getPars(self):
         return(np.hstack([self.kappa,self.gamma,self.vx,self.vy,self.vz,self.tau]))
 
-    def load(self):
+    def load(self,simple = False):
         simmod = np.load("./simmodels/NA1.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
@@ -74,15 +74,16 @@ class NonStatAnIsoSimp:
         self.vz = simmod['vz']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
-        Hs = self.getH()
-        Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa)))
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        A_mat = self.Dv@Dk - Ah
-        self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = self.cholesky(self.Q)
-        assert(self.Q_fac != -1)
-        self.mvar = rqinv(self.Q).diagonal()
+        if not simple:
+            Hs = self.getH()
+            Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa)))
+            A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+            Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
+            A_mat = self.Dv@Dk - Ah
+            self.Q = A_mat.transpose()@self.iDv@A_mat
+            self.Q_fac = self.cholesky(self.Q)
+            assert(self.Q_fac != -1)
+            self.mvar = rqinv(self.Q).diagonal()
 
     def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-5,
             par = np.array([1.1]*136)):
