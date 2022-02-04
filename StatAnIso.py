@@ -108,7 +108,7 @@ class StatAnIso:
         self.rho2 = res['x'][5]
         self.rho3 = res['x'][6]
         self.tau = res['x'][7]
-        self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
+        self.sigma = res['x'][7] #np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
@@ -248,6 +248,9 @@ class StatAnIso:
             dw = 2/(1+par[3]**2+par[4]**2+par[5]**2)*(np.array([par[3],par[4],par[5]])*np.exp(par[2])-par[5]*w)
             H = 2*v[:,np.newaxis]*dv[np.newaxis,:] + 2*w[:,np.newaxis]*dw[np.newaxis,:] + np.zeros((self.n,6,3,3))
         return(H)
+
+    def logLike2(self,par):
+        return((np.sum(par**2),-np.sum(2*par)))
 
     def logLike(self, par):
         data  = self.data
