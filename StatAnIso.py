@@ -91,18 +91,18 @@ class StatAnIso:
         if par is None:
             par = np.array([-1,-0.5,-0.5,0.5,0.5,-1,-1,2])
         assert S is not None
-        os.write(1, b'begining  \n')
         self.data = data
         self.r = r
         self.S = S
         self.opt_steps = 0
         self.grad = grad
         self.verbose = verbose
-        os.write(1, b'middle  \n')
         if self.grad:
+            os.write(1, b'begining  \n')
             res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
         else:    
             res = minimize(self.logLike2, x0 = par, tol = 1e-3)
+        os.write(1, b'middle  \n')
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
