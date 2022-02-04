@@ -114,7 +114,6 @@ class StatAnIso:
         return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
-        
         if par is None:
             par = np.array([-1,-0.5,-0.5,0.5,0.5,-1,-1,2])
         mods = np.array(['SI','SA','NA1','NA2'])
@@ -129,7 +128,7 @@ class StatAnIso:
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
         print(res['x'])
-        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
+        #np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
 
