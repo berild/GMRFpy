@@ -91,12 +91,14 @@ class StatAnIso:
         if par is None:
             par = np.array([-1,-0.5,-0.5,0.5,0.5,-1,-1,2])
         assert S is not None
+        os.write(1, b'begining  \n')
         self.data = data
         self.r = r
         self.S = S
         self.opt_steps = 0
         self.grad = grad
         self.verbose = verbose
+        os.write(1, b'middle  \n')
         if self.grad:
             res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
         else:    
@@ -110,6 +112,7 @@ class StatAnIso:
         self.rho3 = res['x'][6]
         self.tau = res['x'][7]
         self.sigma = res['x'][7] #np.log(np.sqrt(1/np.exp(self.tau)))
+        os.write(1, b'after  \n')
         return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
@@ -120,17 +123,14 @@ class StatAnIso:
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
-        os.write(1, b'before  \n')
         self.data = (tmp['data']*1)[np.sort(tmp['locs'+dhos[dho-1]]*1),:(rs[r-1])]
         self.r = rs[r-1]
         self.S = np.zeros((self.n))
         self.S[np.sort(tmp['locs'+dhos[dho-1]]*1)] = 1
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
-        os.write(1, b'middle  \n')
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
         np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = self.S)
-        os.write(1, b'after  \n')
         return(True)
         
 
