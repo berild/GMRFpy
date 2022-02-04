@@ -97,9 +97,9 @@ class StatAnIso:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
+            res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
         else:    
-            res = minimize(self.logLike, x0 = par, tol = 1e-3)
+            res = minimize(self.logLike2, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
