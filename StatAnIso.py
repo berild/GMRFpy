@@ -98,11 +98,10 @@ class StatAnIso:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            os.write(1, b'begining  \n')
             res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
         else:    
+            os.write(1, b'other  \n')
             res = minimize(self.logLike2, x0 = par, tol = 1e-3)
-        os.write(1, b'middle  \n')
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
@@ -255,8 +254,10 @@ class StatAnIso:
         return(H)
 
     def logLike2(self,par):
+        os.write(1, b'begining  \n')
         time.sleep(2)
-        return((np.sum(par**2),-np.sum(2*par)))
+        res = (np.sum(par**2),-np.sum(2*par))
+        return(res)
 
     def logLike(self, par):
         data  = self.data
