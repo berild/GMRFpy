@@ -10,6 +10,7 @@ inla = importr("INLA")
 from scipy.optimize import minimize
 import os
 from grid import Grid
+import time
 
 def delete_rows_csr(mat, indices):
     """
@@ -253,6 +254,7 @@ class StatAnIso:
         return(H)
 
     def logLike2(self,par):
+        time.sleep(2)
         return((np.sum(par**2),-np.sum(2*par)))
 
     def logLike(self, par):
