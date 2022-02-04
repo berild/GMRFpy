@@ -98,10 +98,10 @@ class StatAnIso:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
+            res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS")
             os.write(1, b'after\n')
         else:    
-            res = minimize(self.logLike2, x0 = par, tol = 1e-3)
+            res = minimize(self.logLike, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
@@ -253,13 +253,11 @@ class StatAnIso:
         return(H)
 
     def logLike2(self,par):
-        os.write(1, b'begining  \n')
-        time.sleep(2)
-        res = (np.sum(par**2),-2*par)
-        os.write(1, b'middle\n')
+        res = np.array([np.sum(par**2),2*par])
         return(res)
 
     def logLike(self, par):
+        os.write(1, b'begining  \n')
         data  = self.data
         Hs = self.getH(par[1:7])
         Dk =  np.exp(par[0])*sparse.eye(self.n) 
@@ -349,6 +347,7 @@ class StatAnIso:
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3_1 = %2.2f"%np.exp(par[1]),"\u03B3_2 = %2.2f"%np.exp(par[2]),"\u03B3_3 = %2.2f"%np.exp(par[3]),
                 "\u03C1_1 = %2.2f"%(par[4]),"\u03C1_2 = %2.2f"%(par[5]),"\u03C1_3 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
+            os.write(1, b'after \n')
             return((like,jac))
         else: 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
