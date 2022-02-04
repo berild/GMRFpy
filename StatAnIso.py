@@ -98,7 +98,7 @@ class StatAnIso:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS")
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
             os.write(1, b'after\n')
         else:    
             res = minimize(self.logLike, x0 = par, tol = 1e-3)
@@ -128,7 +128,8 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = self.S)
+        print(res['x'])
+        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
 
@@ -347,7 +348,7 @@ class StatAnIso:
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3_1 = %2.2f"%np.exp(par[1]),"\u03B3_2 = %2.2f"%np.exp(par[2]),"\u03B3_3 = %2.2f"%np.exp(par[3]),
                 "\u03C1_1 = %2.2f"%(par[4]),"\u03C1_2 = %2.2f"%(par[5]),"\u03C1_3 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
-            os.write(1, b'after \n')
+            os.write(1, b'middle \n')
             return((like,jac))
         else: 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
