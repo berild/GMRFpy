@@ -255,7 +255,7 @@ class StatAnIso:
     def logLike2(self,par):
         os.write(1, b'begining  \n')
         time.sleep(2)
-        res = (np.sum(par**2),-np.sum(2*par))
+        res = (np.sum(par**2),-2*par)
         os.write(1, b'middle\n')
         return(res)
 
