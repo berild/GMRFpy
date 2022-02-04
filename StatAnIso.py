@@ -99,8 +99,8 @@ class StatAnIso:
         self.verbose = verbose
         if self.grad:
             res = minimize(self.logLike2, x0 = par,jac = True, method = "BFGS",tol = 1e-3)
+            os.write(1, b'after\n')
         else:    
-            os.write(1, b'other  \n')
             res = minimize(self.logLike2, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
@@ -111,7 +111,6 @@ class StatAnIso:
         self.rho3 = res['x'][6]
         self.tau = res['x'][7]
         self.sigma = res['x'][7] #np.log(np.sqrt(1/np.exp(self.tau)))
-        os.write(1, b'after  \n')
         return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
@@ -257,6 +256,7 @@ class StatAnIso:
         os.write(1, b'begining  \n')
         time.sleep(2)
         res = (np.sum(par**2),-np.sum(2*par))
+        os.write(1, b'middle\n')
         return(res)
 
     def logLike(self, par):
