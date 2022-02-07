@@ -99,7 +99,7 @@ class StatAnIso:
         self.verbose = verbose
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
-            os.write(1, b'after\n')
+            os.write(1, b'after \n')
         else:    
             res = minimize(self.logLike, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
