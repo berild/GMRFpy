@@ -85,7 +85,7 @@ class NonStatAnIsoSimp:
             assert(self.Q_fac != -1)
             self.mvar = rqinv(self.Q).diagonal()
 
-    def fit(self,data, r, S = None,verbose = False, grad = True, tol = 1e-4,par = None):
+    def fit(self,data, r, S = None,verbose = False, grad = True,par = None):
         if par is None:
             par = np.array([-0.5]*136)
             #mod3: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), sigma(135)
@@ -96,9 +96,10 @@ class NonStatAnIsoSimp:
         self.grad = grad
         self.verbose = verbose
         if self.grad:
-            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = tol)
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
+            os.write(1, b'after\n')
         else:    
-            res = minimize(self.logLike, x0 = par, tol = tol)
+            res = minimize(self.logLike, x0 = par)
         self.kappa = res['x'][0:27]
         self.gamma = res['x'][27:54]
         self.vx = res['x'][54:81]
@@ -122,7 +123,7 @@ class NonStatAnIsoSimp:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez('./fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = self.S)
+        np.savez('./fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
 
     def loadFit(self, simmod, dho, r, num, file = None):
