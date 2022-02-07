@@ -6,7 +6,7 @@ from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 inla = importr("INLA")
-#robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
+robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
 from scipy.optimize import minimize
 import os
 from grid import Grid
