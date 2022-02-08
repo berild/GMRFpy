@@ -2,10 +2,6 @@ import sys, getopt
 import numpy as np
 import os
 from scipy import sparse
-from StatIso import StatIso
-from StatAnIso import StatAnIso
-from NonStatAnIsoSimp import NonStatAnIsoSimp
-from NonStatAnIsoComp import NonStatAnIsoComp
 from grid import Grid
 import plotly.graph_objs as go
 import rpy2.robjects as robj
@@ -65,13 +61,17 @@ class spde:
         if model is not None:
             self.model = model 
         if (self.model==1):
+            from StatIso import StatIso
             self.mod = StatIso(grid = self.grid, par=par)
         elif (self.model==2):
+            from StatAnIso import StatAnIso
             self.mod = StatAnIso(grid = self.grid, par=par)
         elif (self.model==3):
-            self.mod = NonStatAnIsoSimp(grid = self.grid, par=par)
+            from NonStatAnIso import NonStatAnIso
+            self.mod = NonStatAnIso(grid = self.grid, par=par)
         elif (self.model==4):
-            self.mod = NonStatAnIsoComp(grid = self.grid,par=par)
+            from NonStatAnIso2 import NonStatAnIso
+            self.mod = NonStatAnIso(grid = self.grid,par=par)
         elif (self.model==5):
             from StatAnIso2 import StatAnIso
             self.mod = StatAnIso(grid = self.grid,par=par)
