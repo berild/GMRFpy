@@ -72,6 +72,9 @@ class spde:
             self.mod = NonStatAnIsoSimp(grid = self.grid, par=par)
         elif (self.model==4):
             self.mod = NonStatAnIsoComp(grid = self.grid,par=par)
+        elif (self.model==5):
+            from StatAnIso2 import StatAnIso
+            self.mod = StatAnIso(grid = self.grid,par=par)
         else:
             print("Not a implemented model (1-4)...")
 
