@@ -61,11 +61,14 @@ class NonStatAnIsoSimp:
         self.grad = True
         self.like = 10000
         self.jac = np.array([-100]*136)
+        self.loaded = False
 
     def getPars(self):
         return(np.hstack([self.kappa,self.gamma,self.vx,self.vy,self.vz,self.tau]))
 
     def load(self,simple = False):
+        if self.loaded:
+            return
         simmod = np.load("./simmodels/NA1.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
@@ -74,6 +77,7 @@ class NonStatAnIsoSimp:
         self.vz = simmod['vz']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
+        self.loaded = True
         if not simple:
             Hs = self.getH()
             Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa)))

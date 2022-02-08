@@ -63,8 +63,11 @@ class StatAnIso:
         self.grad = True
         self.like = 10000
         self.jac = np.array([-100]*8)
+        self.loaded = False
 
     def load(self,simple = False):
+        if self.loaded:
+            return
         simmod = np.load("./simmodels/SA.npz")
         self.kappa = simmod['kappa']*1
         self.gamma1 = simmod['gamma1']*1
@@ -75,6 +78,7 @@ class StatAnIso:
         self.rho3 = simmod['rho3']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
+        self.loaded = True
         if not simple:
             self.v, self.w = self.getVW(np.array([self.gamma2,self.gamma3,self.rho1,self.rho2,self.rho3]))
             Hs = np.exp(self.gamma1)*np.eye(3) + self.v[:,np.newaxis]*self.v[np.newaxis,:]  + self.w[:,np.newaxis]*self.w[np.newaxis,:]  + np.zeros((self.n,6,3,3))
@@ -128,7 +132,7 @@ class StatAnIso:
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
         print(res['x'])
-        #np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
+        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
 
@@ -257,7 +261,7 @@ class StatAnIso:
         return(res)
 
     def logLike(self, par):
-        os.write(1, b'begining  \n')
+        #os.write(1, b'begining  \n')
         data  = self.data
         Hs = self.getH(par[1:7])
         Dk =  np.exp(par[0])*sparse.eye(self.n) 
@@ -347,7 +351,7 @@ class StatAnIso:
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3_1 = %2.2f"%np.exp(par[1]),"\u03B3_2 = %2.2f"%np.exp(par[2]),"\u03B3_3 = %2.2f"%np.exp(par[3]),
                 "\u03C1_1 = %2.2f"%(par[4]),"\u03C1_2 = %2.2f"%(par[5]),"\u03C1_3 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
-            os.write(1, b'middle \n')
+            #os.write(1, b'middle \n')
             return((like,jac))
         else: 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
