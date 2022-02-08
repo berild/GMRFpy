@@ -11,7 +11,7 @@ def main(argv):
         print("No simulation model specified...exiting...")
         sys.exit(2)
     elif (len(argv)==1):
-        if ((int(argv[0])<1) or (int(argv[0])>4)):
+        if ((int(argv[0])<1) or (int(argv[0])>5)):
             print("Incorrect simulation model...exiting...")
             sys.exit()
         else:
