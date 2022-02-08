@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+simulations/S*
+fits/S*
+fits/N*
+simulations/N*
+
