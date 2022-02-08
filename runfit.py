@@ -1,4 +1,3 @@
-
 import sys, getopt
 import numpy as np
 from spde import spde
@@ -21,7 +20,7 @@ def fitPar(model,data):
     print(str(vers.shape[0])+" of 900")
     mod = spde(model = model)
     fit_ = partial(fit, mod=mod, data = data, vers=vers)
-    res = Parallel(n_jobs=15,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
+    res = Parallel(n_jobs=30,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
 def findFits(model, data):
@@ -52,6 +51,7 @@ def main(argv):
     else:
         print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
         res = fitPar(int(mods[0]),int(mods[1]))
+        os.system('say "Beer time."')
         return(res)
 
 
