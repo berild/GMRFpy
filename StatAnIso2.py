@@ -103,7 +103,6 @@ class StatAnIso:
         self.verbose = verbose
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
-            os.write(1, b'after \n')
         else:    
             res = minimize(self.logLike, x0 = par, tol = 1e-3)
         self.kappa = res['x'][0]
@@ -131,7 +130,6 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        print(res['x'])
         np.savez(file = './fits/' + mods[simmod-1] + '-SA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
