@@ -229,7 +229,7 @@ class StatAnIso:
     def getH(self,par,d=None):
         v = np.array([par[3],par[4],par[5]])
         if d is None:
-            Hs = np.diag(np.exp([par[0],par[1],par[2]])) + v[:,np.newaxis]*v[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            H = np.diag(np.exp([par[0],par[1],par[2]])) + v[:,np.newaxis]*v[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 0:
             H = np.diag([np.exp(par[0]),0,0]) + np.zeros((self.n,6,3,3))
         elif d == 1:
