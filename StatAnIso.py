@@ -78,7 +78,6 @@ class StatAnIso:
         self.rho3 = simmod['rho3']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
-        self.loaded = True
         if not simple:
             self.v, self.w = self.getVW(np.array([self.gamma2,self.gamma3,self.rho1,self.rho2,self.rho3]))
             Hs = np.exp(self.gamma1)*np.eye(3) + self.v[:,np.newaxis]*self.v[np.newaxis,:]  + self.w[:,np.newaxis]*self.w[np.newaxis,:]  + np.zeros((self.n,6,3,3))
@@ -90,6 +89,7 @@ class StatAnIso:
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
             self.mvar = rqinv(self.Q).diagonal()
+            self.loaded = True
         
     def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
         if par is None:
@@ -103,9 +103,8 @@ class StatAnIso:
         self.verbose = verbose
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
-            os.write(1, b'after \n')
         else:    
-            res = minimize(self.logLike, x0 = par, tol = 1e-3)
+            res = minimize(self.logLike, x0 = par)
         self.kappa = res['x'][0]
         self.gamma1 = res['x'][1]
         self.gamma2 = res['x'][2]
@@ -131,7 +130,6 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        print(res['x'])
         np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
