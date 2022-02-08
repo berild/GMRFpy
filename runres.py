@@ -8,17 +8,68 @@ def print1(res):
     for j in range(3):
         lines.append("")
         for i in range(9):
-            lines[j] = lines[j] + "|  %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
+            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
 
-    print("DHO    |                     100                    |                   10000                    |                   27000           \n")
-    print("Real.  |      1       |      10      |      100     |       1      |      10      |      100     |      1       |      10      |      100   \n")
+    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
+    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
     print(lines[0])
     print(lines[1])
     print(lines[2])
 
+def print2(res):
+    lines = list(["\u03BA      ","\u03B3_1      ","\u03B3_2      ","\u03B3_3      ","\u03C1_1      ","\u03C1_2      ","\u03C1_3      ","\u03C4      "])
+    for j in range(8):
+        lines.append("")
+        for i in range(9):
+            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
+
+    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
+    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
+    for j in range(8):
+        print(lines[j])
+
+def print3(res):
+    lines = list(["\u03BA      ","\u03B3_1      ","\u03B3_2      ","\u03B3_3      ","\u03C1_1      ","\u03C1_2      ","\u03C1_3      ","\u03C4      "])
+    for j in range(8):
+        lines.append("")
+        for i in range(9):
+            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
+
+    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
+    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
+    for j in range(8):
+        print(lines[j])
+        
+
+def print4(res):
+    lines = list(["\u03BA      ","\u03B3_1      ","\u03B3_2      ","\u03B3_3      ","\u03C1_1      ","\u03C1_2      ","\u03C1_3      ","\u03C4      "])
+    for j in range(8):
+        lines.append("")
+        for i in range(9):
+            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
+
+    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
+    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
+    for j in range(8):
+        print(lines[j])
+
+
+def print5(res):
+    lines = list(["\u03BA      ","\u03B3_x      ","\u03B3_y      ","\u03B3_z     ","vx      ","vy      ","vz     ","\u03C4      "])
+    for j in range(8):
+        lines.append("")
+        for i in range(9):
+            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
+
+    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
+    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
+    for j in range(8):
+        print(lines[j])
+
+
 def main(argv):
     vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
-    modstr = np.array(["SI", "SA", "NA1"])
+    modstr = np.array(["SI", "SA", "NA1", "NA2","SA1"])
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
     model = int(argv[0])
@@ -49,7 +100,12 @@ def main(argv):
             res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1) - truth
             res[1][:,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars] - truth)**2,axis = 1)
     np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
-    print1(res)
+    if model == 1:
+        print1(res)
+    elif model == 2:
+        print2(res)
+    elif model == 3:
+        print3(res)
     return(True)
 
 if __name__ == "__main__":
