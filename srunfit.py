@@ -8,8 +8,9 @@ import os
 
 def fitPar(model,data,start):
     vers = findFits(model,data,start)
-    print(str(vers.shape[0])+" of " + str(3*3*10))
+    res = True
     for i in range(vers.shape[0]):
+        print(str(i)+" of " + str(vers.shape[0]))
         mod = spde(model = model)
         res = mod.fitTo(data,vers[i,1],vers[i,2], vers[i,0],verbose = False)
         if not res:
