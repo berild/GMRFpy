@@ -18,7 +18,7 @@ def fitPar(model,data,start):
     return(res)
 
 def findFits(model, data,start):
-    vers = np.array([[i,j,k] for i in range(start,start + 10) for j in range(1,4) for k in range(1,4)])
+    vers = np.array([[i,j,k] for i in range(start,start + 5) for j in range(1,4) for k in range(1,4)])
     modstr = np.array(["SI", "SA", "NA1","NA2","SA1"])
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
