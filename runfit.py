@@ -6,20 +6,15 @@ from functools import partial
 import os
 
 
-def fit(version,mod,data,vers):
-    try: 
-        res = mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False)
-    except:
-        print("Model "+ str(mod.model) + " data " + str(data) + " dho " + str(vers[version,1])+ " r " + str(vers[version,2]) + " num " + str(vers[version,0]) + " crashed")
-        return(False)
-    else:
-        return(res)
+def fit(version,model,data,vers):
+    mod = spde(model = model)
+    res = mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False)
+    return(res)
 
 def fitPar(model,data):
     vers = findFits(model,data)
     print(str(vers.shape[0])+" of 900")
-    mod = spde(model = model)
-    fit_ = partial(fit, mod=mod, data = data, vers=vers)
+    fit_ = partial(fit, model=model, data = data, vers=vers)
     res = Parallel(n_jobs=30,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
