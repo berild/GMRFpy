@@ -1,8 +1,6 @@
 import sys, getopt
 import numpy as np
 from spde import spde
-from joblib import Parallel, delayed
-from functools import partial
 import os
 
 
@@ -12,7 +10,7 @@ def fitPar(model,data,start):
     for i in range(vers.shape[0]):
         print(str(i)+" of " + str(vers.shape[0]))
         mod = spde(model = model)
-        res = mod.fitTo(data,vers[i,1],vers[i,2], vers[i,0],verbose = False)
+        res = mod.fitTo(data,vers[i,1],vers[i,2], vers[i,0],verbose = True)
         if not res:
             print(str(vers[i,1])+" failed")
     return(res)
@@ -35,11 +33,11 @@ def findFits(model, data,start):
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic","Stationary Anistropic new"]
     mods = None
+    start = int(argv[1])
     if "-" in argv[0]:
         mods = argv[0].split('-',2)
     else:
         mods = np.array([argv[0],argv[0]])
-        start = int(argv[1])
     if mods is None:
         print('Incorrect input models...exiting...')
         sys.exit()
