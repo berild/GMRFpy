@@ -6,7 +6,7 @@ from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 inla = importr("INLA")
-robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
+#robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
 from scipy.optimize import minimize
 import os
 from grid import Grid
@@ -29,7 +29,7 @@ def rqinv(Q):
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
+    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v)),**{'num.threads': 1}))))
     return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
 
 
