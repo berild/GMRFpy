@@ -106,6 +106,10 @@ def main(argv):
         print2(res)
     elif model == 3:
         print3(res)
+    elif model == 4:
+        print4(res)
+    elif model == 5:
+        print5(res)
     return(True)
 
 if __name__ == "__main__":
