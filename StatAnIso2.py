@@ -235,13 +235,13 @@ class StatAnIso:
         elif d == 2:
             H = np.diag([0,0,np.exp(par[2])]) + np.zeros((self.n,6,3,3))
         elif d == 3:
-            dv = np.array([par[3],0,0])
+            dv = np.array([1,0,0])
             H = 2*v[:,np.newaxis]*dv[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 4:
-            dv = np.array([0,par[4],0])
+            dv = np.array([0,1,0])
             H = 2*v[:,np.newaxis]*dv[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 5:
-            dv = np.array([0,0,par[5]])
+            dv = np.array([0,0,1])
             H = 2*v[:,np.newaxis]*dv[np.newaxis,:] + np.zeros((self.n,6,3,3))
         return(H)
 
