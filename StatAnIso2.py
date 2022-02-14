@@ -302,14 +302,16 @@ class StatAnIso:
             Q_vy = A_vy.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_vy
             Q_vz = A_vz.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_vz
 
-            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
+            v = np.array([par[4],par[5],par[6]])
+
+            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r - 1/2*v@v/2**2*self.r*self.S.shape[0]
             g_kappa = 1/2*((Qinv - Qcinv)@Q_kappa).diagonal().sum()*self.r
             g_gammaX = 1/2*((Qinv - Qcinv)@Q_gammaX).diagonal().sum()*self.r
             g_gammaY = 1/2*((Qinv - Qcinv)@Q_gammaY).diagonal().sum()*self.r
             g_gammaZ = 1/2*((Qinv - Qcinv)@Q_gammaZ).diagonal().sum()*self.r
-            g_vx = 1/2*((Qinv - Qcinv)@Q_vx).diagonal().sum()*self.r
-            g_vy = 1/2*((Qinv - Qcinv)@Q_vy).diagonal().sum()*self.r
-            g_vz = 1/2*((Qinv - Qcinv)@Q_vz).diagonal().sum()*self.r
+            g_vx = 1/2*((Qinv - Qcinv)@Q_vx).diagonal().sum()*self.r - np.array([1,0,0])*v/2**2*self.r*self.S.shape[0]
+            g_vy = 1/2*((Qinv - Qcinv)@Q_vy).diagonal().sum()*self.r - np.array([0,1,0])*v/2**2*self.r*self.S.shape[0]
+            g_vz = 1/2*((Qinv - Qcinv)@Q_vz).diagonal().sum()*self.r - np.array([0,0,1])*v/2**2*self.r*self.S.shape[0]
             g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[7])).diagonal().sum()*self.r
 
             for j in range(self.r): # Maybe make a better version than this for loop possibly need to account for dimension 0
