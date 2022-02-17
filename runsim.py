@@ -24,7 +24,6 @@ def main(argv):
     else:
         print("Incorrect input arguments...")
         sys.exit()
-    os.system('say "Beer time."')
 
 
 if __name__ == "__main__":
