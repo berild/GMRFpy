@@ -121,8 +121,8 @@ class NonStatAnIso:
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
             par = np.array([-0.5]*190)
-        mods = np.array(['SI','SA','NA1','NA2'])
-        dhos = np.array(['100','1000','10000'])
+        mods = np.array(['SI','SA','NA1','NA2','SA1'])
+        dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
         self.data = (tmp['data']*1)[tmp['locs'+dhos[dho-1]],:(rs[r-1])]
@@ -132,7 +132,7 @@ class NonStatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez('./fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = tmp['locs'+dhos[dho-1]]*1)
+        np.savez('./fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'], S = tmp['locs'+dhos[dho-1]]*1)
         return(True)
 
     # assertion for number of parameters
