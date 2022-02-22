@@ -21,6 +21,21 @@ class Grid:
         self.bs = None
         self.bsH = None
 
+    def setGrid(self, M = None, N = None, P = None, x = None, y = None, z = None):
+        # define after N, M, P and hx, hy, hz
+        # define after N, M, P and A, B, C
+        # define after hx, hy, hz and A, B, C
+        # define after x, y, z and hx, hy, hz
+        # define after x, y, x snf N, M, P 
+        if x is not None and y is not None and z is not None:
+            self.x, self.y, self.z = np.array(x), np.array(y), np.array(z)
+            self.M, self.N, self.P = M, N, P 
+            A, B, C = self.x.max()-self.x.min(), self.y.max() - self.y.min(), self.z.max()-self.z.min()
+            self.hx, self.hy, self.hz = A/(M-1), B/(N-1), C/(P-1)
+            sx, sy, sz = np.meshgrid(x,y,z)
+            self.sx, self.sy, self.sz = sx.flatten(), sy.flatten(), sz.flatten()
+            
+
     def basis(self,dx = 0 , dy = 0, dz = 0, d = 2):
         tx = self.sx+dx
         ty = self.sy+dy
@@ -78,7 +93,6 @@ class Grid:
                 for k in range(3):
                     bs[:,i*3*3+j*3+k] = bx[:,i]*by[:,j]*bz[:,k]
         self.bs = bs
-        return(bs)
 
 
     def basisH(self):
@@ -107,7 +121,6 @@ class Grid:
                 for k in range(3):
                     bs[:,:,i*3*3+j*3+k] = bxA[:,:,i]*byA[:,:,j]*bzA[:,:,k]
         self.bsH = bs
-        return(bs)
 
     def evalB(self,par,bs = None, d=None):
         if d is not None:

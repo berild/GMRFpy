@@ -55,6 +55,11 @@ class spde:
         else:
             self.mod = None 
 
+    def setGrid(self,M=None,N = None, P = None, x = None, y = None, z = None):
+        self.grid.setGrid(M = M, N = N, P = P, x = x, y = y, z = z)
+        if self.mod is not None:
+            self.mod.setGrid(self.grid)
+
     # fix par for models
     def define(self, model = None, par = None):
         assert(model is not None or self.model is not None)
@@ -109,7 +114,7 @@ class spde:
         return(success)
         
     # fix par for models
-    def fit(self,data,r,S, par = None,model = None,verbose = False, grad = True):
+    def fit(self,data,r, S, par = None,model = None,verbose = False, grad = True):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
@@ -183,7 +188,7 @@ class spde:
         fig = go.Figure(go.Volume(
             x=self.grid.sx,
             y=self.grid.sy,
-            z=self.grid.sz,
+            z= - self.grid.sz,
             value = value,
             opacity=0.4, 
             surface_count=30,
