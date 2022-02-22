@@ -93,7 +93,7 @@ class StatAnIso:
         
     def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
         if par is None:
-            par = np.array([-1.5,0.5,0.5,-0.5,0.5,0.5,0.5,2])
+            par = np.array([-1.5,0.5,0.5,-0.5,0.5,-0.5,0.5,2])
         assert S is not None
         self.data = data
         self.r = r
@@ -104,7 +104,7 @@ class StatAnIso:
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")
         else:    
-            res = minimize(self.logLike, x0 = par, tol = 1e-3)
+            res = minimize(self.logLike, x0 = par)
         self.kappa = res['x'][0]
         self.gammaX = res['x'][1]
         self.gammaY = res['x'][2]
@@ -118,7 +118,7 @@ class StatAnIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
-            par = np.array([-1.5,0.5,0.5,-0.5,0.5,0.5,0.5,2])
+            par = np.array([-1.5,0.5,0.5,-0.5,0.5,-0.5,0.5,2])
         mods = np.array(['SI','SA','NA1','NA2','SA1'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
@@ -302,16 +302,16 @@ class StatAnIso:
             Q_vy = A_vy.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_vy
             Q_vz = A_vz.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_vz
 
-            v = np.array([par[4],par[5],par[6]])
+            # v = np.array([par[4],par[5],par[6]])
 
-            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r - 1/2*v@v/2**2*self.r*self.S.shape[0]
+            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r #- 1/2*v@v/3**2*self.r*self.S.shape[0]
             g_kappa = 1/2*((Qinv - Qcinv)@Q_kappa).diagonal().sum()*self.r
             g_gammaX = 1/2*((Qinv - Qcinv)@Q_gammaX).diagonal().sum()*self.r
             g_gammaY = 1/2*((Qinv - Qcinv)@Q_gammaY).diagonal().sum()*self.r
             g_gammaZ = 1/2*((Qinv - Qcinv)@Q_gammaZ).diagonal().sum()*self.r
-            g_vx = 1/2*((Qinv - Qcinv)@Q_vx).diagonal().sum()*self.r - np.array([1,0,0])@v/2**2*self.r*self.S.shape[0]
-            g_vy = 1/2*((Qinv - Qcinv)@Q_vy).diagonal().sum()*self.r - np.array([0,1,0])@v/2**2*self.r*self.S.shape[0]
-            g_vz = 1/2*((Qinv - Qcinv)@Q_vz).diagonal().sum()*self.r - np.array([0,0,1])@v/2**2*self.r*self.S.shape[0]
+            g_vx = 1/2*((Qinv - Qcinv)@Q_vx).diagonal().sum()*self.r #- np.array([1,0,0])@v/2**2*self.r*self.S.shape[0]
+            g_vy = 1/2*((Qinv - Qcinv)@Q_vy).diagonal().sum()*self.r #- np.array([0,1,0])@v/2**2*self.r*self.S.shape[0]
+            g_vz = 1/2*((Qinv - Qcinv)@Q_vz).diagonal().sum()*self.r #- np.array([0,0,1])@v/2**2*self.r*self.S.shape[0]
             g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[7])).diagonal().sum()*self.r
 
             for j in range(self.r): # Maybe make a better version than this for loop possibly need to account for dimension 0
@@ -331,7 +331,7 @@ class StatAnIso:
             self.jac = jac
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3_1 = %2.2f"%np.exp(par[1]),"\u03B3_2 = %2.2f"%np.exp(par[2]),"\u03B3_3 = %2.2f"%np.exp(par[3]),
-                "\u03C1_1 = %2.2f"%(par[4]),"\u03C1_2 = %2.2f"%(par[5]),"\u03C1_3 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
+                "vx = %2.2f"%(par[4]),"vy = %2.2f"%(par[5]),"vz = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
             #os.write(1, b'middle \n')
             return((like,jac))
         else: 
