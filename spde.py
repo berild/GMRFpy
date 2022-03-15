@@ -6,7 +6,11 @@ from grid import Grid
 import plotly.graph_objs as go
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
-inla = importr("INLA")
+importr("Matrix")
+import tempfile
+#inla = importr("INLA")
+robj.r.source("rqinv.R")
+
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
 
 def is_int(val):
@@ -16,15 +20,47 @@ def is_int(val):
         return(False)
     return(True)
 
+#def rqinv(Q):
+#    tmp = Q.shape
+#    Q = Q.tocoo()
+#    r = Q.row
+#    c = Q.col
+#    v = Q.data
+#    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
+#    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
+
+
+#def rqinv(Q):
+#    tmp_dir = tempfile._get_default_tempdir()+"/"
+#    tmp = tmp_dir + next(tempfile._get_candidate_names())
+#    tmp_toInla = tmp + ".npy"
+#    tmp_fromInla = tmp + 'fromInla.npy'
+#    tshape = Q.shape
+#    Q = Q.tocoo()
+#    r = Q.row
+#    c = Q.col
+#    v = Q.data
+#    tmp = np.stack([r,c,v],axis=1)
+#    np.save(tmp_toInla, tmp)
+#    robj.r.source("rqinv.R")
+#    robj.r.rqinv(tmp_toInla)
+#    tmp = np.load(tmp_fromInla)
+#    rOut = tmp[:,0].astype('int')
+#    cOut = tmp[:,1].astype('int')
+#    vOut = tmp[:,2].astype('double')
+#    os.remove(tmp_toInla)
+#    os.remove(tmp_fromInla)
+#    return(sparse.csc_matrix((vOut, (rOut,cOut)), shape=tshape))
+
 def rqinv(Q):
-    tmp = Q.shape
+    tshape = Q.shape
     Q = Q.tocoo()
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
-
+    #robj.r.source("rqinv.R")
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 class spde:
     '''
@@ -47,18 +83,17 @@ class spde:
     define : str
         This is where we store arg,
     '''
-    def __init__(self, model = None):
+    def __init__(self, model = None, par = None):
         self.grid = Grid()
         self.model = model
         if self.model is not None:
-            self.define(model = self.model)
+            self.define(model = self.model,par=par)
         else:
             self.mod = None 
 
     def setGrid(self,M=None,N = None, P = None, x = None, y = None, z = None):
         self.grid.setGrid(M = M, N = N, P = P, x = x, y = y, z = z)
-        if self.mod is not None:
-            self.mod.setGrid(self.grid)
+        self.mod.setGrid(self.grid)
 
     # fix par for models
     def define(self, model = None, par = None):
@@ -72,7 +107,7 @@ class spde:
             from StatAnIso import StatAnIso
             self.mod = StatAnIso(grid = self.grid, par=par)
         elif (self.model==3):
-            from NonStatAnIso import NonStatAnIso
+            from NonStatAnIso4 import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid, par=par)
         elif (self.model==4):
             from NonStatAnIso3 import NonStatAnIso
@@ -80,6 +115,13 @@ class spde:
         elif (self.model==5):
             from StatAnIso3 import StatAnIso
             self.mod = StatAnIso(grid = self.grid,par=par)
+        elif (self.model==6):
+            from NonStatIso import NonStatIso
+            self.mod = NonStatIso(grid = self.grid,par=par)
+        elif (self.model==7):
+            # Semi-anistropic / vertical-lateral anisotropy
+            from StatIso2 import StatIso
+            self.mod = StatIso(grid = self.grid,par=par)
         else:
             print("Not a implemented model (1-4)...")
 
@@ -150,8 +192,7 @@ class spde:
         return
 
     def Mvar(self):
-        if self.mod.Q is None:
-            self.mod.setQ()
+        self.mod.setQ()
         self.mod.mvar = rqinv(self.mod.Q).diagonal()
 
     # add to all
