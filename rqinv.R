@@ -58,7 +58,7 @@ rqinv = function(A)
   
   constr.file <- tempfile()
   out.file <- tempfile()
-  if (system("which inla") == 0){
+  if  (Sys.info()['sysname']=="Linux"){
     where = "/usr/local/bin/inla"
   }else{
     where = "~/Library/R/4.0/library/INLA/bin/mac/64bit/inla.run" 
