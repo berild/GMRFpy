@@ -27,13 +27,24 @@ class Grid:
         # define after hx, hy, hz and A, B, C
         # define after x, y, z and hx, hy, hz
         # define after x, y, x snf N, M, P 
-        if x is not None and y is not None and z is not None:
-            self.x, self.y, self.z = np.array(x), np.array(y), np.array(z)
-            self.M, self.N, self.P = M, N, P 
-            A, B, C = self.x.max()-self.x.min(), self.y.max() - self.y.min(), self.z.max()-self.z.min()
-            self.hx, self.hy, self.hz = A/(M-1), B/(N-1), C/(P-1)
-            sx, sy, sz = np.meshgrid(x,y,z)
-            self.sx, self.sy, self.sz = sx.flatten(), sy.flatten(), sz.flatten()
+        self.x = x
+        self.y = y
+        self.z = z
+        self.M =  M
+        self.N =  N 
+        self.P = P 
+        self.A = self.x.max()-self.x.min()
+        self.B =  self.y.max()-self.y.min()
+        self.C = self.z.max()-self.z.min()
+        self.hx = self.A/(self.M-1)
+        self.hy = self.B/(self.N-1) 
+        self.hz = self.C/(self.P-1)
+        sx, sy, sz = np.meshgrid(self.x,self.y,self.z)
+        self.sx = sx.flatten()
+        self.sy = sy.flatten()
+        self.sz = sz.flatten()
+        self.basisN()
+        self.basisH()
             
 
     def basis(self,dx = 0 , dy = 0, dz = 0, d = 2):
@@ -91,7 +102,7 @@ class Grid:
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    bs[:,i*3*3+j*3+k] = bx[:,i]*by[:,j]*bz[:,k]
+                    bs[:,i*3*3+j*3+k] = bx[:,j]*by[:,i]*bz[:,k]
         self.bs = bs
 
 
@@ -112,14 +123,14 @@ class Grid:
                 bx,by,bz = self.basis(dz=-1/2*self.hz)
             elif (i == 5):
                 bx,by,bz = self.basis(dz=1/2*self.hz)
-            bxA[:,i] = bx
-            byA[:,i] = by
-            bzA[:,i] = bz
+            bxA[:,i,:] = bx
+            byA[:,i,:] = by
+            bzA[:,i,:] = bz
         bs = np.zeros((self.M*self.N*self.P,6,3*3*3))
         for i in range(3):
             for j in range(3):
                 for k in range(3):
-                    bs[:,:,i*3*3+j*3+k] = bxA[:,:,i]*byA[:,:,j]*bzA[:,:,k]
+                    bs[:,:,i*3*3+j*3+k] = bxA[:,:,j]*byA[:,:,i]*bzA[:,:,k]
         self.bsH = bs
 
     def evalB(self,par,bs = None, d=None):
