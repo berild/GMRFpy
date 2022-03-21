@@ -54,6 +54,7 @@ class StatIso:
         self.grad = True
         self.like = 10000
         self.jac = np.array([-100]*3)
+        self.loaded = False
     
     def setGrid(self,grid):
         self.grid = grid
@@ -65,6 +66,8 @@ class StatIso:
         self.grid.basisN()
         
     def load(self,simple = False):
+        if self.loaded:
+            return
         simmod = np.load("./simmodels/SI.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
@@ -79,6 +82,7 @@ class StatIso:
             self.Q = A_mat.transpose()@self.iDv@A_mat
             self.Q_fac = cholesky(self.Q)
             self.mvar = rqinv(self.Q).diagonal()
+            self.loaded = True
     
     # maybe add some assertions
     def loadFit(self, simmod, dho, r, num, file = None):
