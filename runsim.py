@@ -1,7 +1,7 @@
-import sys, getopt
+import sys
 import numpy as np
 from spde import spde
-import os
+from tqdm import tqdm
 
 
 
@@ -19,8 +19,8 @@ def main(argv):
             mod = spde(model = int(argv[0]))
             mod.load()
             res = np.zeros(100)
-            for i in range(100):
-                res[i] = mod.sim()
+            for i in tqdm(range(100)):
+                res[i] = mod.sim(verbose = False)
     else:
         print("Incorrect input arguments...")
         sys.exit()
