@@ -5,7 +5,7 @@ from ah3d2 import AH
 from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
-inla = importr("INLA")
+importr("Matrix")
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
 from scipy.optimize import minimize
 import os
@@ -24,13 +24,13 @@ def delete_rows_csr(mat, indices):
     return mat[mask]
 
 def rqinv(Q):
-    tmp = Q.shape
+    tshape = Q.shape
     Q = Q.tocoo()
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v)),**{'num.threads': 1}))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 
 class StatAnIso:
@@ -51,7 +51,6 @@ class StatAnIso:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         self.Dv = self.V*sparse.eye(self.n)
         self.iDv = 1/self.V*sparse.eye(self.n)
-        self.v = np.array([self.vx,self.vy,self.vz])
         self.Q = None
         self.Q_fac = None
         self.mvar = None
@@ -64,6 +63,15 @@ class StatAnIso:
         self.like = 10000
         self.jac = np.array([-100]*8)
         self.loaded = False
+
+    def setGrid(self,grid):
+        self.grid = grid
+        self.n = self.grid.M*self.grid.N*self.grid.P
+        self.V = self.grid.hx*self.grid.hy*self.grid.hz
+        self.Dv = self.V*sparse.eye(self.grid.M*self.grid.N*self.grid.P)
+        self.iDv = 1/self.V*sparse.eye(self.grid.M*self.grid.N*self.grid.P)
+        self.grid.basisH()
+        self.grid.basisN()
 
     def load(self,simple = False):
         if self.loaded:
@@ -80,8 +88,8 @@ class StatAnIso:
         self.tau = np.log(1/np.exp(self.sigma)**2)
         if not simple:
             vv = np.array([self.vx,self.vy,self.vz])
-            vb1 = np.array([-self.vy,self.vx,self.vz])
-            vb2 = np.array([self.vy*self.vz - self.vz*self.vx,-self.vz*self.vy - self.vx*self.vz,self.vx**2 + self.vy**2])
+            vb1 = np.array([-self.vy,self.vx,0])
+            vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])
             ww = self.rho1*vb1 + self.rho2*vb2
             Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
             Dk =  sparse.diags([np.exp(self.kappa)]*(self.n)) 
@@ -158,8 +166,8 @@ class StatAnIso:
         self.tau = par[7]
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         vv = np.array([self.vx,self.vy,self.vz])
-        vb1 = np.array([-self.vy,self.vx,self.vz])
-        vb2 = np.array([self.vy*self.vz - self.vz*self.vx,-self.vz*self.vy - self.vx*self.vz,self.vx**2 + self.vy**2])
+        vb1 = np.array([-self.vy,self.vx,0])
+        vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy,self.vx**2 + self.vy**2])
         ww = self.rho1*vb1 + self.rho2*vb2
         Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
@@ -203,17 +211,17 @@ class StatAnIso:
             assert(self.kappa is not None and self.gamma is not None and self.vx is not None and self.vy is not None and self.vz is not None and self.rho1 is not None and self.rho2 is not None and self.sigma is not None)
         else:
             self.kappa = par[0]
-            self.gammaX = par[1]
-            self.gammaY = par[2]
-            self.gammaZ = par[3]
-            self.vx = par[4]
-            self.vy = par[5]
-            self.vz = par[6]
+            self.gamma = par[1]
+            self.vx = par[2]
+            self.vy = par[3]
+            self.vz = par[4]
+            self.rho1 = par[5]
+            self.rho2 = par[6]
             self.tau = par[7]
             self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         vv = np.array([self.vx,self.vy,self.vz])
-        vb1 = np.array([-self.vy,self.vx,self.vz])
-        vb2 = np.array([self.vy*self.vz - self.vz*self.vx,-self.vz*self.vy - self.vx*self.vz,self.vx**2 + self.vy**2])
+        vb1 = np.array([-self.vy,self.vx,0])
+        vb2 = np.array([ - self.vz*self.vx,-self.vz*self.vy,self.vx**2 + self.vy**2])
         ww = self.rho1*vb1 + self.rho2*vb2
         Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
@@ -236,8 +244,8 @@ class StatAnIso:
     def getH(self,par,d=None):
         if d is None:
             vv = np.array([par[1],par[2],par[3]])
-            vb1 = np.array([-par[2],par[1],par[3]])
-            vb2 = np.array([par[2]*par[3]-par[3]*par[1],-par[3]*par[2] - par[1]*par[3], par[1]**2 + par[2]**2])
+            vb1 = np.array([-par[2],par[1],0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             ww = vb1*par[4] + vb1*par[5]
             H = np.diag(np.exp([par[0],par[0],par[0]])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 0:
@@ -245,24 +253,42 @@ class StatAnIso:
         elif d == 1:
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([1,0,0])
-            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            vb1 = np.array([-par[2],par[1],0])
+            dvb1 = np.array([0,1,0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
+            dvb2 = np.array([-par[3],0,2*par[1]])
+            ww = vb1*par[4] + vb1*par[5]
+            dw = par[4]*dvb1 + par[5]*dvb2
+            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 2:
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([0,1,0])
-            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            vb1 = np.array([-par[2],par[1],0])
+            dvb1 = np.array([-1,0,0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
+            dvb2 = np.array([0,-par[3],2*par[2]])
+            ww = vb1*par[4] + vb1*par[5]
+            dw = par[4]*dvb1 + par[5]*dvb2
+            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 3:
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([0,0,1])
-            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            vb1 = np.array([-par[2],par[1],0])
+            dvb1 = np.array([0,0,0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
+            dvb2 = np.array([-par[1],-par[2],0])
+            ww = vb1*par[4] + vb1*par[5]
+            dw = par[4]*dvb1 + par[5]*dvb2
+            H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 4:
-            vb1 = np.array([-par[2],par[1],par[3]])
-            vb2 = np.array([par[2]*par[3]-par[3]*par[1],-par[3]*par[2] - par[1]*par[3], par[1]**2 + par[2]**2])
+            vb1 = np.array([-par[2],par[1],0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             ww = vb1*par[4] + vb1*par[5]
             dw = vb1 
             H = 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 5:
-            vb1 = np.array([-par[2],par[1],par[3]])
-            vb2 = np.array([par[2]*par[3]-par[3]*par[1],-par[3]*par[2] - par[1]*par[3], par[1]**2 + par[2]**2])
+            vb1 = np.array([-par[2],par[1],0])
+            vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             ww = vb1*par[4] + vb1*par[5]
             dw = vb2
             H = 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
@@ -353,8 +379,8 @@ class StatAnIso:
             self.like = like
             self.jac = jac
             if self.verbose:
-                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3_1 = %2.2f"%np.exp(par[1]),"\u03B3_2 = %2.2f"%np.exp(par[2]),"\u03B3_3 = %2.2f"%np.exp(par[3]),
-                "vx = %2.2f"%(par[4]),"vy = %2.2f"%(par[5]),"vz = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
+                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]),"vx = %2.2f"%par[2],"vy = %2.2f"%par[3],
+                "vz = %2.2f"%(par[4]),"\u03C1_1 = %2.2f"%(par[5]),"\u03C1_2 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
             #os.write(1, b'middle \n')
             return((like,jac))
         else: 

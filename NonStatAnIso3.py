@@ -5,7 +5,7 @@ from ah3d2 import AH
 from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
-inla = importr("INLA")
+importr("Matrix")
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
 from scipy.optimize import minimize
 import os
@@ -23,13 +23,13 @@ def delete_rows_csr(mat, indices):
     return mat[mask]
 
 def rqinv(Q):
-    tmp = Q.shape
+    tshape = Q.shape
     Q = Q.tocoo()
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 
 class NonStatAnIso:
@@ -151,7 +151,7 @@ class NonStatAnIso:
             mods = np.array(['SI','SA','NA1','NA2'])
             dhos = np.array(['100','1000','10000'])
             rs = np.array([1,10,100])
-            file = './fits/' + mods[simmod-1] + '-NA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
+            file = './fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
         self.S = np.zeros((self.grid.M*self.grid.N*self.grid.P))
@@ -234,8 +234,8 @@ class NonStatAnIso:
         if var is None:
             pg = np.exp(self.grid.evalBH(par = gamma))
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
-            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]],axis=2)
-            vb2 = np.stack([vv[:,:,1]*vv[:,:,2]-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1]-vv[:,:,0]*vv[:,:,2],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
             ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
             H = (np.eye(3)*(np.stack([pg,pg,pg],axis=2))[:,:,:,np.newaxis]) + vv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:] + ww[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
         elif var == 0: #gamma
@@ -255,15 +255,15 @@ class NonStatAnIso:
             H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:]
         elif var == 4: #rho1
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
-            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]],axis=2)
-            vb2 = np.stack([vv[:,:,1]*vv[:,:,2]-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1]-vv[:,:,0]*vv[:,:,2],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
             ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
             dw = vb1*self.grid.bsH[:,:,d][:,:,np.newaxis] 
             H = 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
         elif var == 5: #rho2
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
-            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]],axis=2)
-            vb2 = np.stack([vv[:,:,1]*vv[:,:,2]-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1]-vv[:,:,0]*vv[:,:,2],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
             ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
             dw = vb2*self.grid.bsH[:,:,d][:,:,np.newaxis] 
             H = 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
@@ -304,14 +304,6 @@ class NonStatAnIso:
         if self.grad:
             Qinv = rqinv(Q)
             Qcinv = rqinv(Q_c)
-
-            g_kappa = np.zeros(27)
-            g_gamma = np.zeros(27)
-            g_vx = np.zeros(27)
-            g_vy = np.zeros(27)
-            g_vz = np.zeros(27)
-            g_rho1 = np.zeros(27)
-            g_rho2 = np.zeros(27)
 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[189]/2 - 1/2*Q_c_fac.logdet()*self.r
             
@@ -388,7 +380,6 @@ class NonStatAnIso:
             self.opt_steps = self.opt_steps + 1
             self.like = like
             self.jac = jac
-            np.savez('SINMOD-NA1-2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))

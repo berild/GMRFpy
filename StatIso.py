@@ -5,8 +5,7 @@ from ah3d2 import AH
 from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
-inla = importr("INLA")
-robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
+importr("Matrix")
 from scipy.optimize import minimize
 import os
 from grid import Grid
@@ -23,13 +22,13 @@ def delete_rows_csr(mat, indices):
     return mat[mask]
 
 def rqinv(Q):
-    tmp = Q.shape
+    tshape = Q.shape
     Q = Q.tocoo()
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 class StatIso:
     #mod1: kappa(0), gamma(1), sigma(2)
@@ -56,6 +55,15 @@ class StatIso:
         self.like = 10000
         self.jac = np.array([-100]*3)
     
+    def setGrid(self,grid):
+        self.grid = grid
+        self.n = self.grid.M*self.grid.N*self.grid.P
+        self.V = self.grid.hx*self.grid.hy*self.grid.hz
+        self.Dv = self.V*sparse.eye(self.grid.M*self.grid.N*self.grid.P)
+        self.iDv = 1/self.V*sparse.eye(self.grid.M*self.grid.N*self.grid.P)
+        self.grid.basisH()
+        self.grid.basisN()
+        
     def load(self,simple = False):
         simmod = np.load("./simmodels/SI.npz")
         self.kappa = simmod['kappa']*1
