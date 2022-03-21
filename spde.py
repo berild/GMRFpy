@@ -165,12 +165,14 @@ class spde:
         res = self.mod.fit(data, r, S, par = par,verbose = verbose, grad=grad)
         return(res)
 
-    def sim(self,model=None):
+    def sim(self,model=None,verbose=False):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
+                sys.exit()
             else:
-                print("Loading pre-defined model ", self.model)
+                if verbose:
+                    print("Loading pre-defined model ", self.model)
         else:
             self.define(model = model)
         return(self.mod.sim())
