@@ -104,7 +104,7 @@ class StatAnIso:
         
     def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
         if par is None:
-            par = np.array([-1.5,0.5,0.5,-0.5,0.5,-0.5,0.5,2])
+            par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
         assert S is not None
         self.data = data
         self.r = r
@@ -129,7 +129,7 @@ class StatAnIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
-            par = np.array([-1.5,0.5,0.5,-0.5,0.5,-0.5,0.5,2])
+            par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
         mods = np.array(['SI','SA','NA1','NA2','SA1'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
@@ -223,7 +223,7 @@ class StatAnIso:
         vb1 = np.array([-self.vy,self.vx,0])
         vb2 = np.array([ - self.vz*self.vx,-self.vz*self.vy,self.vx**2 + self.vy**2])
         ww = self.rho1*vb1 + self.rho2*vb2
-        Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
+        Hs = np.diag([np.exp(self.gamma),np.exp(self.gamma),np.exp(self.gamma)]) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
         A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
@@ -247,7 +247,7 @@ class StatAnIso:
             vb1 = np.array([-par[2],par[1],0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             ww = vb1*par[4] + vb2*par[5]
-            H = np.diag(np.exp([par[0],par[0],par[0]])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            H = np.diag([np.exp(par[0]),np.exp(par[0]),np.exp(par[0])]) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         elif d == 0: # gamma1
             H = np.diag([np.exp(par[0]),np.exp(par[0]),np.exp(par[0])]) + np.zeros((self.n,6,3,3))
         elif d == 1: # vx
