@@ -244,15 +244,33 @@ class NonStatAnIso:
         elif var == 1: #vx
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
             dv = np.stack([self.grid.bsH[:,:,d],self.grid.evalBH(par = np.zeros(27)),self.grid.evalBH(par = np.zeros(27))],axis = 2)
-            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:]
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            dvb1 = np.stack([-vv[:,:,1]*0,self.grid.bsH[:,:,d],vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            dvb2 = np.stack([-vv[:,:,2]*self.grid.bsH[:,:,d],-vv[:,:,2]*vv[:,:,1]*0,2*vv[:,:,0]*self.grid.bsH[:,:,d]],axis=2)
+            ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            dw = dvb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + dvb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:] + 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
         elif var == 2: #vy
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
             dv = np.stack([self.grid.evalBH(par = np.zeros(27)),self.grid.bsH[:,:,d],self.grid.evalBH(par = np.zeros(27))],axis = 2)
-            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:]
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            dvb1 = np.stack([-self.grid.bsH[:,:,d],vv[:,:,0]*0,vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            dvb2 = np.stack([-vv[:,:,2]*vv[:,:,0]*0,-vv[:,:,2]*self.grid.bsH[:,:,d],2*vv[:,:,1]*self.grid.bsH[:,:,d]],axis=2)
+            ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            dw = dvb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + dvb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:] + 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
         elif var == 3: #vz
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
             dv = np.stack([self.grid.evalBH(par = np.zeros(27)),self.grid.evalBH(par = np.zeros(27)),self.grid.bsH[:,:,d]],axis = 2)
-            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:]
+            vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)
+            dvb1 = np.stack([-vv[:,:,1]*0,vv[:,:,0]*0,vv[:,:,2]*0],axis=2)
+            vb2 = np.stack([-vv[:,:,2]*vv[:,:,0],-vv[:,:,2]*vv[:,:,1],vv[:,:,0]**2 + vv[:,:,1]**2],axis=2)
+            dvb2 = np.stack([-vv[:,:,0]*self.grid.bsH[:,:,d],-vv[:,:,1]*self.grid.bsH[:,:,d],2*vv[:,:,1]*self.grid.bsH[:,:,d]*0],axis=2)
+            ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            dw = dvb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + dvb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
+            H = 2*dv[:,:,:,np.newaxis]*vv[:,:,np.newaxis,:] + 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
         elif var == 4: #rho1
             vv = np.stack([self.grid.evalBH(par = vx),self.grid.evalBH(par = vy),self.grid.evalBH(par = vz)],axis=2)
             vb1 = np.stack([-vv[:,:,1],vv[:,:,0],vv[:,:,2]*0],axis=2)

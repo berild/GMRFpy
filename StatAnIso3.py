@@ -246,50 +246,50 @@ class StatAnIso:
             vv = np.array([par[1],par[2],par[3]])
             vb1 = np.array([-par[2],par[1],0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             H = np.diag(np.exp([par[0],par[0],par[0]])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        elif d == 0:
+        elif d == 0: # gamma1
             H = np.diag([np.exp(par[0]),np.exp(par[0]),np.exp(par[0])]) + np.zeros((self.n,6,3,3))
-        elif d == 1:
+        elif d == 1: # vx
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([1,0,0])
             vb1 = np.array([-par[2],par[1],0])
             dvb1 = np.array([0,1,0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             dvb2 = np.array([-par[3],0,2*par[1]])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             dw = par[4]*dvb1 + par[5]*dvb2
             H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        elif d == 2:
+        elif d == 2: # vy
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([0,1,0])
             vb1 = np.array([-par[2],par[1],0])
             dvb1 = np.array([-1,0,0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             dvb2 = np.array([0,-par[3],2*par[2]])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             dw = par[4]*dvb1 + par[5]*dvb2
             H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        elif d == 3:
+        elif d == 3: # vz
             vv = np.array([par[1],par[2],par[3]])
             dv = np.array([0,0,1])
             vb1 = np.array([-par[2],par[1],0])
             dvb1 = np.array([0,0,0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
             dvb2 = np.array([-par[1],-par[2],0])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             dw = par[4]*dvb1 + par[5]*dvb2
             H = 2*dv[:,np.newaxis]*vv[np.newaxis,:] + 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        elif d == 4:
+        elif d == 4: # rho1
             vb1 = np.array([-par[2],par[1],0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             dw = vb1 
             H = 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        elif d == 5:
+        elif d == 5: # rho2
             vb1 = np.array([-par[2],par[1],0])
             vb2 = np.array([-par[3]*par[1],-par[3]*par[2], par[1]**2 + par[2]**2])
-            ww = vb1*par[4] + vb1*par[5]
+            ww = vb1*par[4] + vb2*par[5]
             dw = vb2
             H = 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         return(H)
