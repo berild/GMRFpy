@@ -109,7 +109,7 @@ class spde:
             from NonStatAnIso4 import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid, par=par)
         elif (self.model==4):
-            from NonStatAnIso3 import NonStatAnIso
+            from NonStatAnIso3nn import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid,par=par)
         elif (self.model==5):
             from StatAnIso3 import StatAnIso
