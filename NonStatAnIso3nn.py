@@ -11,6 +11,7 @@ importr("Matrix")
 import nlopt
 import os
 from grid import Grid
+import tempfile
 robj.r.source("rqinv.R")
 
 def delete_rows_csr(mat, indices):
@@ -119,19 +120,24 @@ class NonStatAnIso:
             tmp = self.logLike(par=x)
             grad[:] = tmp[1]
             return(tmp[0])
-        opt = nlopt.opt(nlopt.LD_LBFGS,190)
-        opt.set_max_objective(f)
-        res = opt.optimize(par)
-        self.kappa = res[0:27]
-        self.gamma = res[27:54]
-        self.vx = res[54:81]
-        self.vy = res[81:108]
-        self.vz = res[108:135]
-        self.rho1 = res[135:162]
-        self.rho2 = res[162:189]
-        self.tau = res[189]
-        self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
-        return(res)
+        try:
+            opt = nlopt.opt(nlopt.LD_LBFGS,190)
+            opt.set_ftol_rel(1e-5)
+            res = opt.optimize(par)
+        except:
+            print("Failed")
+            return(False)
+        else:
+            self.kappa = res[0:27]
+            self.gamma = res[27:54]
+            self.vx = res[54:81]
+            self.vy = res[81:108]
+            self.vz = res[108:135]
+            self.rho1 = res[135:162]
+            self.rho2 = res[162:189]
+            self.tau = res[189]
+            self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
+            return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
@@ -147,8 +153,11 @@ class NonStatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez('./fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res, S = tmp['locs'+dhos[dho-1]]*1)
-        return(True)
+        if not res:
+            return(False)
+        else:
+            np.savez('./fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
+            return(True)
 
     # assertion for number of parameters
     def loadFit(self, simmod, dho, r, num, file = None):
