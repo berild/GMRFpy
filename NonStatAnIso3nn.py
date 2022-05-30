@@ -120,24 +120,20 @@ class NonStatAnIso:
             tmp = self.logLike(par=x)
             grad[:] = tmp[1]
             return(tmp[0])
-        try:
-            opt = nlopt.opt(nlopt.LD_LBFGS,190)
-            opt.set_ftol_rel(1e-5)
-            res = opt.optimize(par)
-        except:
-            print("Failed")
-            return(False)
-        else:
-            self.kappa = res[0:27]
-            self.gamma = res[27:54]
-            self.vx = res[54:81]
-            self.vy = res[81:108]
-            self.vz = res[108:135]
-            self.rho1 = res[135:162]
-            self.rho2 = res[162:189]
-            self.tau = res[189]
-            self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
-            return(res)
+        
+        opt = nlopt.opt(nlopt.LD_LBFGS,190)
+        opt.set_ftol_rel(1e-5)
+        res = opt.optimize(par)
+        self.kappa = res[0:27]
+        self.gamma = res[27:54]
+        self.vx = res[54:81]
+        self.vy = res[81:108]
+        self.vz = res[108:135]
+        self.rho1 = res[135:162]
+        self.rho2 = res[162:189]
+        self.tau = res[189]
+        self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
+        return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
