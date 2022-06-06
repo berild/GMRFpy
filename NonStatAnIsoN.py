@@ -82,7 +82,7 @@ class NonStatAnIso:
     def load(self,simple = False):
         if self.loaded:
             return
-        simmod = np.load("./simmodels/NA2.npz")
+        simmod = np.load("./simmodels/NA.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
         self.vx = simmod['vx']*1
@@ -141,7 +141,7 @@ class NonStatAnIso:
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
             par = np.array([-0.5]*190)
-        mods = np.array(['SI','SA','NA1','NA2','SA1'])
+        mods = np.array(['SI','SA','NI','NA'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
@@ -155,16 +155,16 @@ class NonStatAnIso:
         if not res:
             return(False)
         else:
-            np.savez('./fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
+            np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
             return(True)
 
     # assertion for number of parameters
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
-            mods = np.array(['SI','SA','NA1','NA2'])
+            mods = np.array(['SI','SA','NI','NA'])
             dhos = np.array(['100','1000','10000'])
             rs = np.array([1,10,100])
-            file = './fits/' + mods[simmod-1] + '-NA2-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
+            file = './fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
         self.S = np.zeros((self.grid.M*self.grid.N*self.grid.P))
@@ -205,14 +205,14 @@ class NonStatAnIso:
         self.load()
         mods = []
         for file in os.listdir("./simulations/"):
-            if file.startswith("NA2-"):
+            if file.startswith("NA-"):
                 mods.append(int(file.split("-")[1].split(".")[0]))
         if not mods:
             num = 1
         else:
             num = max(mods) + 1 
         self.data = self.sample(n=100)
-        np.savez('./simulations/NA2-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
+        np.savez('./simulations/NA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
     def setQ(self,par = None):
