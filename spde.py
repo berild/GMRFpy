@@ -103,13 +103,13 @@ class spde:
             from StatIso import StatIso
             self.mod = StatIso(grid = self.grid, par=par)
         elif (self.model==2):
-            from StatAnIso import StatAnIso
+            from StatAnIsoN import StatAnIso
             self.mod = StatAnIso(grid = self.grid, par=par)
         elif (self.model==3):
             from NonStatAnIso4 import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid, par=par)
         elif (self.model==4):
-            from NonStatAnIso3nn import NonStatAnIso
+            from NonStatAnIsoN import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid,par=par)
         elif (self.model==5):
             from StatAnIso3 import StatAnIso
