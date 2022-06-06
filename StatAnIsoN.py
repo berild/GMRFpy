@@ -76,7 +76,7 @@ class StatAnIso:
     def load(self,simple = False):
         if self.loaded:
             return
-        simmod = np.load("./simmodels/SA1.npz")
+        simmod = np.load("./simmodels/SA.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
         self.vx = simmod['vx']*1
@@ -88,8 +88,8 @@ class StatAnIso:
         self.tau = np.log(1/np.exp(self.sigma)**2)
         if not simple:
             vv = np.array([self.vx,self.vy,self.vz])
-            vb1 = np.array([-self.vy,self.vx,0])
-            vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])
+            vb1 = np.array([-self.vy,self.vx,0])/np.sqrt(self.vx**2 + self.vy**2)
+            vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])/np.sqrt(self.vz**2*self.vx**2 + self.vz**2*self.vy**2 + (self.vx**2 + self.vy**2)**2)
             ww = self.rho1*vb1 + self.rho2*vb2
             Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
             Dk =  sparse.diags([np.exp(self.kappa)]*(self.n)) 
@@ -175,8 +175,8 @@ class StatAnIso:
         self.tau = par[7]
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         vv = np.array([self.vx,self.vy,self.vz])
-        vb1 = np.array([-self.vy,self.vx,0])
-        vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy,self.vx**2 + self.vy**2])
+        vb1 = np.array([-self.vy,self.vx,0])/np.sqrt(self.vx**2 + self.vy**2)
+        vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])/np.sqrt(self.vz**2*self.vx**2 + self.vz**2*self.vy**2 + (self.vx**2 + self.vy**2)**2)
         ww = self.rho1*vb1 + self.rho2*vb2
         Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
