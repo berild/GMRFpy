@@ -139,7 +139,7 @@ class StatAnIso:
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
         if par is None:
             par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
-        mods = np.array(['SI','SA','NA1','NA2','SA1'])
+        mods = np.array(['SI','SA','NA1','NA2'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
@@ -150,17 +150,17 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez(file = './fits/' + mods[simmod-1] + '-SA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res, S = np.sort(tmp['locs'+dhos[dho-1]]*1))
+        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res, S = np.sort(tmp['locs'+dhos[dho-1]]*1))
         return(True)
         
 
     # maybe add some assertions
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
-            mods = np.array(['SI','SA','NA1','NA2','SA1'])
+            mods = np.array(['SI','SA','NA1','NA2'])
             dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
-            file = './fits/' + mods[simmod-1] + '-SA1-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
+            file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
         self.S = fitmod['S']*1
@@ -205,14 +205,14 @@ class StatAnIso:
         self.load()
         mods = []
         for file in os.listdir("./simulations/"):
-            if file.startswith("SA1-"):
+            if file.startswith("SA-"):
                 mods.append(int(file.split("-")[1].split(".")[0]))
         if not mods:
             num = 1
         else:
             num = max(mods) + 1 
         self.data = self.sample(n=100)
-        np.savez('./simulations/SA1-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
+        np.savez('./simulations/SA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
     def setQ(self,par = None):

@@ -6,12 +6,12 @@ from tqdm import tqdm
 
 
 def main(argv):
-    modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic", "Stationary Anistropic new"]
+    modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic"]
     if (len(argv)==0):
         print("No simulation model specified...exiting...")
         sys.exit(2)
     elif (len(argv)==1):
-        if ((int(argv[0])<1) or (int(argv[0])>5)):
+        if ((int(argv[0])<1) or (int(argv[0])>4)):
             print("Incorrect simulation model...exiting...")
             sys.exit()
         else:
