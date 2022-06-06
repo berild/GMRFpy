@@ -1,5 +1,4 @@
 from re import S
-import sys, getopt
 import numpy as np
 from scipy import sparse
 from ah3d2 import AH
@@ -11,7 +10,6 @@ importr("Matrix")
 import nlopt
 import os
 from grid import Grid
-import tempfile
 robj.r.source("rqinv.R")
 
 def delete_rows_csr(mat, indices):
@@ -421,8 +419,6 @@ class NonStatAnIso:
             like =  like/(self.S.shape[0]*self.r)
             jac =  g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
-            self.like = like
-            self.jac = jac
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))

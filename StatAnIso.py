@@ -24,15 +24,14 @@ def delete_rows_csr(mat, indices):
     return mat[mask]
 
 def rqinv(Q):
-    tmp = Q.shape
+    tshape = Q.shape
     Q = Q.tocoo()
     r = Q.row
     c = Q.col
     v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v)),**{'num.threads': 1}))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
-
-
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
+    
 class StatAnIso:
     #mod2: kappa(0), gamma1(1), gamma2(2), gamma3(3), rho1(4), rho2(5), rho3(6), sigma(7)
     def __init__(self,grid=None,par=None):
@@ -329,7 +328,7 @@ class StatAnIso:
             g_rho1 = 1/2*((Qinv - Qcinv)@Q_rho1).diagonal().sum()*self.r
             g_rho2 = 1/2*((Qinv - Qcinv)@Q_rho2).diagonal().sum()*self.r
             g_rho3 = 1/2*((Qinv - Qcinv)@Q_rho3).diagonal().sum()*self.r
-            g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[7])).diagonal().sum()*self.r
+            g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[7])).diagonal().sum()*self.r 
 
             for j in range(self.r): # Maybe make a better version than this for loop possibly need to account for dimension 0
                 g_kappa = g_kappa + (- 1/2*mu_c[:,j].transpose()@Q_kappa@mu_c[:,j])

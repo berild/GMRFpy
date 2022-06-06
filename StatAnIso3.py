@@ -370,7 +370,7 @@ class StatAnIso:
                 g_vy = g_vy + (- 1/2*mu_c[:,j].transpose()@Q_vy@mu_c[:,j])
                 g_vz = g_vx + (- 1/2*mu_c[:,j].transpose()@Q_vz@mu_c[:,j])
                 g_rho1 = g_rho1 + (- 1/2*mu_c[:,j].transpose()@Q_rho1@mu_c[:,j])
-                g_vz = g_rho2 + (- 1/2*mu_c[:,j].transpose()@Q_rho2@mu_c[:,j])
+                g_rho2 = g_rho2 + (- 1/2*mu_c[:,j].transpose()@Q_rho2@mu_c[:,j])
                 g_noise = g_noise + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[7]))
                 like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[7])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
             like = -like/(self.r * self.S.shape[0])
