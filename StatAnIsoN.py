@@ -116,24 +116,19 @@ class StatAnIso:
             tmp = self.logLike(par=x)
             grad[:] = tmp[1]
             return(tmp[0])
-        try:
-            opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
-            opt.set_max_objective(f)
-            opt.set_ftol_rel(1e-6)
-            res = opt.optimize(par)
-        except:
-            print("Failed")
-            return(False)
-        else:
-            self.kappa = res[0]
-            self.gamma = res[1]
-            self.vx = res[2]
-            self.vy = res[3]
-            self.vz = res[4]
-            self.rho1 = res[5]
-            self.rho2 = res[6]
-            self.tau = res[7]
-            self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
+        opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
+        opt.set_max_objective(f)
+        opt.set_ftol_rel(1e-6)
+        res = opt.optimize(par)
+        self.kappa = res[0]
+        self.gamma = res[1]
+        self.vx = res[2]
+        self.vy = res[3]
+        self.vz = res[4]
+        self.rho1 = res[5]
+        self.rho2 = res[6]
+        self.tau = res[7]
+        self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
     def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
@@ -150,7 +145,7 @@ class StatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res, S = np.sort(tmp['locs'+dhos[dho-1]]*1))
+        np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
         
 
