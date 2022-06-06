@@ -104,7 +104,7 @@ class NonStatAnIso:
             self.mvar = rqinv(self.Q).diagonal()
             self.loaded = True
 
-    def fit(self,data, r, S = None,verbose = False, grad = True, par = None):
+    def fit(self,data, r, S = None,verbose = False, fgrad = True, par = None):
         #mod4: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), rho1(135:162), rho2(162:189), sigma(189)
         if par is None:
             par = np.array([-0.5]*190)
@@ -112,7 +112,7 @@ class NonStatAnIso:
         self.r = r
         self.S = S
         self.opt_steps = 0
-        self.grad = grad
+        self.grad = fgrad
         self.verbose = verbose
         def f(x,grad):
             tmp = self.logLike(par=x)
@@ -138,7 +138,7 @@ class NonStatAnIso:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
+    def fitTo(self,simmod,dho,r,num,verbose = False, fgrad = True, par = None):
         if par is None:
             par = np.array([-0.5]*190)
         mods = np.array(['SI','SA','NI','NA'])
@@ -151,7 +151,7 @@ class NonStatAnIso:
         self.S[tmp['locs'+dhos[dho-1]]*1] = 1
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
-        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
+        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, fgrad = fgrad,par = par)
         if not res:
             return(False)
         else:

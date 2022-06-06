@@ -102,7 +102,7 @@ class StatAnIso:
             self.mvar = rqinv(self.Q).diagonal()
             self.loaded = True
         
-    def fit(self,data, r, S = None,par = None,verbose = False, grad = True):
+    def fit(self,data, r, S = None,par = None,verbose = False, fgrad = True):
         if par is None:
             par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
         assert S is not None
@@ -110,7 +110,7 @@ class StatAnIso:
         self.r = r
         self.S = S
         self.opt_steps = 0
-        self.grad = grad
+        self.grad = fgrad
         self.verbose = verbose
         def f(x,grad):
             tmp = self.logLike(par=x)
@@ -131,7 +131,7 @@ class StatAnIso:
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
+    def fitTo(self,simmod,dho,r,num,verbose = False, fgrad = True, par = None):
         if par is None:
             par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
         mods = np.array(['SI','SA','NA1','NA2'])
@@ -144,7 +144,7 @@ class StatAnIso:
         self.S[np.sort(tmp['locs'+dhos[dho-1]]*1)] = 1
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
-        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
+        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, fgrad = fgrad,par = par)
         np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
         
@@ -392,8 +392,6 @@ class StatAnIso:
             like = like/(self.r * self.S.shape[0])
             jac = np.array([g_kappa,g_gamma,g_vx,g_vy,g_vz,g_rho1,g_rho2,g_noise])/(self.r * self.S.shape[0])
             self.opt_steps = self.opt_steps + 1
-            self.like = like
-            self.jac = jac
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]),"vx = %2.2f"%par[2],"vy = %2.2f"%par[3],
                 "vz = %2.2f"%(par[4]),"\u03C1_1 = %2.2f"%(par[5]),"\u03C1_2 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
