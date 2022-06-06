@@ -144,25 +144,25 @@ class spde:
         self.mod.loadFit(simmod = simmod, dho = dho , r = r, num = num , file=file)
 
     # fix par for models
-    def fitTo(self,simmod,dho,r,num,model = None,verbose = False, grad = True,par = None):
+    def fitTo(self,simmod,dho,r,num,model = None,verbose = False, fgrad = True,par = None):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
         else:
             self.model = model
             self.define(model = model)
-        success = self.mod.fitTo(simmod, dho, r, num,verbose = verbose, grad=grad,par = par)
+        success = self.mod.fitTo(simmod, dho, r, num,verbose = verbose, fgrad=fgrad,par = par)
         return(success)
         
     # fix par for models
-    def fit(self,data,r, S, par = None,model = None,verbose = False, grad = True):
+    def fit(self,data,r, S, par = None,model = None,verbose = False, fgrad = True):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
         else:
             self.model = model
             self.define(model = model)
-        res = self.mod.fit(data, r, S, par = par,verbose = verbose, grad=grad)
+        res = self.mod.fit(data, r, S, par = par,verbose = verbose, fgrad=fgrad)
         return(res)
 
     def sim(self,model=None,verbose=True):
