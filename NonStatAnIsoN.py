@@ -121,7 +121,7 @@ class NonStatAnIso:
         #try:
         opt = nlopt.opt(nlopt.LD_LBFGS,190)
         opt.set_max_objective(f)
-        opt.set_ftol_rel(1e-5)
+        opt.set_ftol_rel(1e-3)
         res = opt.optimize(par)
         #except:
         #    print("Failed")
@@ -440,6 +440,7 @@ class NonStatAnIso:
             like =  like/(self.S.shape[0]*self.r)
             jac =  g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
+            #np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
