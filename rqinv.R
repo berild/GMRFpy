@@ -18,7 +18,7 @@
 rqinv = function(A)
 {
   version = 0
-  tmpdir = "/cluster/home/martinob/tmp"
+  tmpdir = "/cluster/home/martinob/R/tmp"
   #tmpdir = tempdir()
   filename = paste0(tmpdir, "/in")
   A = INLA::inla.as.dgTMatrix(A)
