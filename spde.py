@@ -8,8 +8,8 @@ import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 importr("Matrix")
 import tempfile
-inla = importr("INLA")
-#robj.r.source("rqinv.R")
+#inla = importr("INLA")
+robj.r.source("rqinv.R")
 
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
 
@@ -20,14 +20,14 @@ def is_int(val):
         return(False)
     return(True)
 
-def rqinv(Q):
-    tmp = Q.shape
-    Q = Q.tocoo()
-    r = Q.row
-    c = Q.col
-    v = Q.data
-    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
-    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
+#def rqinv(Q):
+#    tmp = Q.shape
+#    Q = Q.tocoo()
+#    r = Q.row
+#    c = Q.col
+#    v = Q.data
+#    tmpQinv = np.array(robj.r["as.data.frame"](robj.r["summary"](robj.r["inla.qinv"](robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))))
+#    return(sparse.csc_matrix((np.array(tmpQinv[2,:],dtype = "float32"), (np.array(tmpQinv[0,:]-1,dtype="int32"), np.array(tmpQinv[1,:]-1,dtype="int32"))), shape=tmp))
 
 
 #def rqinv(Q):
@@ -52,14 +52,14 @@ def rqinv(Q):
 #    os.remove(tmp_fromInla)
 #    return(sparse.csc_matrix((vOut, (rOut,cOut)), shape=tshape))
 
-#def rqinv(Q):
-#    tshape = Q.shape
-#    Q = Q.tocoo()
-#    r = Q.row
-#    c = Q.col
-#    v = Q.data
-#    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
-#    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
+def rqinv(Q):
+    tshape = Q.shape
+    Q = Q.tocoo()
+    r = Q.row
+    c = Q.col
+    v = Q.data
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 class spde:
     '''
