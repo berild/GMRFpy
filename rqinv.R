@@ -60,7 +60,7 @@ rqinv = function(A)
   constr.file = tempfile(tmpdir = tmpdir)# paste0(tmpdir,"/constr") 
   out.file = tempfile(tmpdir = tmpdir) # paste0(tmpdir,"/out") 
   if  (Sys.info()['sysname']=="Linux"){
-    where = "/cluster/home/martinob/R/x86_64-pc-linux-gnu-library/4.1/INLA/bin/linux/32bit/inla.run"
+    where = "/cluster/home/martinob/R/x86_64-pc-linux-gnu-library/4.1/INLA/bin/linux/64bit/inla.run"
   }else{
     where = "~/Library/R/4.0/library/INLA/bin/mac/64bit/inla.run" 
   }
