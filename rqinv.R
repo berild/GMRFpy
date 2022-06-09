@@ -57,7 +57,7 @@ rqinv = function(A)
   }
   close(fp)
   constr.file <- tempfile(tmpdir = tmpdir)
-  out.file <- tempfile(tmpdir = tmpdoir)
+  out.file <- tempfile(tmpdir = tmpdir)
   if  (Sys.info()['sysname']=="Linux"){
     where = "/cluster/home/martinob/R/x86_64-pc-linux-gnu-library/4.1/INLA/bin/linux/64bit/inla.run"
   }else{
