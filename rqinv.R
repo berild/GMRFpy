@@ -64,7 +64,7 @@ rqinv = function(A)
   }else{
     where = "~/Library/R/4.0/library/INLA/bin/mac/64bit/inla.run" 
   }
-  system(paste(where, "-s -m qinv", filename, out.file), intern = TRUE)
+  system(paste(where, "-s -m qinv", filename, constr.file, out.file))
 
   fp = file(out.file, "rb")
   
