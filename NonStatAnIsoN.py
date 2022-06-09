@@ -121,7 +121,7 @@ class NonStatAnIso:
         #try:
         opt = nlopt.opt(nlopt.LD_LBFGS,190)
         opt.set_max_objective(f)
-        opt.set_ftol_rel(1e-3)
+        opt.set_ftol_rel(5e-5)
         res = opt.optimize(par)
         #except:
         #    print("Failed")
@@ -152,7 +152,7 @@ class NonStatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, fgrad = fgrad,par = par)
-        if not res:
+        if np.size(res)==1:
             return(False)
         else:
             np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
@@ -349,6 +349,7 @@ class NonStatAnIso:
         Dk =  sparse.diags(np.exp(lkappa)) 
         A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
+        del A_H
         A_mat = self.Dv@Dk - Ah
         Q = A_mat.transpose()@self.iDv@A_mat
         Q_c = Q + self.S.transpose()@self.S*np.exp(par[189])
@@ -387,6 +388,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 0) 
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -396,6 +398,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 1)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -405,6 +408,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 2)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -414,6 +418,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 3)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -423,6 +428,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 4)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -432,6 +438,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -440,7 +447,11 @@ class NonStatAnIso:
             like =  like/(self.S.shape[0]*self.r)
             jac =  g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
-            #np.savez('SINMOD-NA2-new2.npz', par = par)
+            del Q_fac
+            del Q_c_fac
+            del Qinv
+            del Qcinv
+            np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))

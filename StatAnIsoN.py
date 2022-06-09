@@ -118,7 +118,7 @@ class StatAnIso:
             return(tmp[0])
         opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
         opt.set_max_objective(f)
-        opt.set_ftol_rel(1e-4)
+        opt.set_ftol_rel(5e-5)
         res = opt.optimize(par)
         self.kappa = res[0]
         self.gamma = res[1]
