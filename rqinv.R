@@ -18,9 +18,9 @@
 rqinv = function(A)
 {
   version = 0
-  #tmpdir = "/cluster/home/martinob/tmp"
-  tmpdir = tempdir()
-  filename = tmpdir + "/in"
+  tmpdir = "/cluster/home/martinob/tmp"
+  #tmpdir = tempdir()
+  filename = > paste0(tmpdir, "/in")
   A = INLA::inla.as.dgTMatrix(A)
   nrow = dim(A)[1]
   ncol = dim(A)[2]
@@ -57,8 +57,8 @@ rqinv = function(A)
     }
   }
   close(fp)
-  constr.file = tmpdir + "/constr2" #tempfile(tmpdir = tmpdir)
-  out.file = tmpdir + "/out" #tempfile(tmpdir = tmpdir)
+  constr.file = paste0(tmpdir,"/constr") #tempfile(tmpdir = tmpdir)
+  out.file = paste0(tmpdir,"/out") #tempfile(tmpdir = tmpdir)
   if  (Sys.info()['sysname']=="Linux"){
     where = "/cluster/home/martinob/R/x86_64-pc-linux-gnu-library/4.1/INLA/bin/linux/64bit/inla.run"
   }else{
