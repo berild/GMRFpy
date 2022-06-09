@@ -18,7 +18,8 @@
 rqinv = function(A)
 {
   version = 0
-  tmpdir = "/cluster/home/martinob/tmp"
+  #tmpdir = "/cluster/home/martinob/tmp"
+  tmpdir = tempdir()
   filename = tempfile(tmpdir = tmpdir)
   A = INLA::inla.as.dgTMatrix(A)
   nrow = dim(A)[1]
