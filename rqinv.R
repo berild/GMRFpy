@@ -17,6 +17,8 @@
 
 rqinv = function(A)
 {
+  options(warn=-1)
+  INLA::inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")
   version = 0
   #tmpdir = "/cluster/home/martinob/R/tmp"
   tmpdir = tempdir()
