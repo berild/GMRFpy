@@ -22,7 +22,7 @@ rqinv = function(A)
   #tmpdir = "/cluster/home/martinob/R/tmp"
   tmpdir = tempdir()
   filename = tempfile() #paste0(tmpdir, "/in")
-  A = ddpcr::quiet(INLA::inla.as.dgTMatrix(A),all = TRUE)
+  A = INLA::inla.as.dgTMatrix(A)
   nrow = dim(A)[1]
   ncol = dim(A)[2]
   datatype = 1 ## sparse
@@ -65,7 +65,7 @@ rqinv = function(A)
   }else{
     where = "~/Library/R/4.0/library/INLA/bin/mac/64bit/inla.run" 
   }
-  ddpcr::quiet(system(paste(where, "-s -m qinv", filename, constr.file, out.file)),all = T)
+  system(paste(where, "-s -m qinv", filename, constr.file, out.file))
 
   fp = file(out.file, "rb")
   
@@ -192,7 +192,7 @@ rqinv = function(A)
     }
     A = sparseMatrix(i = i, j = j, x = values, dims = c(h$nrow, h$ncol),
                      index1 = FALSE)
-    A =   ddpcr::quiet(INLA::inla.as.dgTMatrix(A),all = TRUE)
+    A = INLA::inla.as.dgTMatrix(A)
   } else {
     stop("This should not happen.")
   }
