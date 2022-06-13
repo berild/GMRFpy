@@ -7,7 +7,8 @@ import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 importr("Matrix")
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
-import nlopt
+#import nlopt
+from scipy.optimize import minimize
 import os
 from grid import Grid
 robj.r.source("rqinv.R")
@@ -114,19 +115,20 @@ class NonStatAnIso:
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
-        def f(x,grad):
-            tmp = self.logLike(par=x)
-            grad[:] = tmp[1]
-            return(tmp[0])
-        #try:
-        opt = nlopt.opt(nlopt.LD_LBFGS,190)
-        opt.set_max_objective(f)
-        opt.set_ftol_rel(5e-5)
-        res = opt.optimize(par)
-        #except:
-        #    print("Failed")
-        #    return(False)
-        #else:
+        #def f(x,grad):
+        #    tmp = self.logLike(par=x)
+        #    grad[:] = tmp[1]
+        #    return(tmp[0])
+        #opt = nlopt.opt(nlopt.LD_LBFGS,190)
+        #opt.set_max_objective(f)
+        #opt.set_ftol_rel(5e-5)
+        #res = opt.optimize(par)
+        if self.grad:
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")#,tol = 1e-3)
+            res = res['x']
+        else:    
+            res = minimize(self.logLike, x0 = par)#, tol = 1e-3)
+            res = res['x']
         self.kappa = res[0:27]
         self.gamma = res[27:54]
         self.vx = res[54:81]
@@ -152,11 +154,8 @@ class NonStatAnIso:
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
         res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, fgrad = fgrad,par = par)
-        if np.size(res)==1:
-            return(False)
-        else:
-            np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
-            return(True)
+        np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
+        return(True)
 
     # assertion for number of parameters
     def loadFit(self, simmod, dho, r, num, file = None):
@@ -444,8 +443,8 @@ class NonStatAnIso:
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
                             g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])   
-            like =  like/(self.S.shape[0]*self.r)
-            jac =  g_par/(self.S.shape[0]*self.r)
+            like =  -like/(self.S.shape[0]*self.r)
+            jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
             del Q_fac
             del Q_c_fac
@@ -453,7 +452,7 @@ class NonStatAnIso:
             del Qcinv
             np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
-                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
+                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
         else: 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[189]/2 - 1/2*Q_c_fac.logdet()*self.r

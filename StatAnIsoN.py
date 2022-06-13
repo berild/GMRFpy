@@ -7,7 +7,8 @@ import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 importr("Matrix")
 #robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "./pardiso.lic")')
-import nlopt
+#import nlopt
+from scipy.optimize import minimize
 import os
 from grid import Grid
 robj.r.source("rqinv.R")
@@ -112,14 +113,20 @@ class StatAnIso:
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
-        def f(x,grad):
-            tmp = self.logLike(par=x)
-            grad[:] = tmp[1]
-            return(tmp[0])
-        opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
-        opt.set_max_objective(f)
-        opt.set_ftol_rel(5e-5)
-        res = opt.optimize(par)
+        #def f(x,grad):
+        #    tmp = self.logLike(par=x)
+        #    grad[:] = tmp[1]
+        #    return(tmp[0])
+        #opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
+        #opt.set_max_objective(f)
+        #opt.set_ftol_rel(5e-5)
+        #res = opt.optimize(par)
+        if self.grad:
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")#,tol = 1e-3)
+            res = res['x']
+        else:    
+            res = minimize(self.logLike, x0 = par)#, tol = 1e-3)
+            res = res['x']
         self.kappa = res[0]
         self.gamma = res[1]
         self.vx = res[2]
@@ -389,11 +396,11 @@ class StatAnIso:
                 g_rho2 = g_rho2 + (- 1/2*mu_c[:,j].transpose()@Q_rho2@mu_c[:,j])
                 g_noise = g_noise + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[7]))
                 like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[7])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
-            like = like/(self.r * self.S.shape[0])
-            jac = np.array([g_kappa,g_gamma,g_vx,g_vy,g_vz,g_rho1,g_rho2,g_noise])/(self.r * self.S.shape[0])
+            like = -like/(self.r * self.S.shape[0])
+            jac = -np.array([g_kappa,g_gamma,g_vx,g_vy,g_vz,g_rho1,g_rho2,g_noise])/(self.r * self.S.shape[0])
             self.opt_steps = self.opt_steps + 1
             if self.verbose:
-                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]),"vx = %2.2f"%par[2],"vy = %2.2f"%par[3],
+                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]),"vx = %2.2f"%par[2],"vy = %2.2f"%par[3],
                 "vz = %2.2f"%(par[4]),"\u03C1_1 = %2.2f"%(par[5]),"\u03C1_2 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
             #os.write(1, b'middle \n')
             return((like,jac))
