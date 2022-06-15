@@ -30,5 +30,3 @@ module load SuiteSparse/5.10.1-foss-2021a-METIS-5.1.0
 module load NLopt/2.7.0-GCCcore-10.3.0
 source ../pyenv/bin/activate
 srun python3 srunfitNA.py $SLURM_ARRAY_TASK_ID
-
-uname -a
