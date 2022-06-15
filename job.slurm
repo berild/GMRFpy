@@ -4,7 +4,7 @@
 #SBATCH --time=4-00:00:00
 #SBATCH --nodes=1
 #SBATCH --array=1-10
-#SBATCH --mem=1000000000
+#SBATCH --mem=100000000
 #SBATCH --job-name="SS_GMRFpy"
 #SBATCH --output=SS_GMRFpy.out
 #SBATCH --mail-user=martinob@ntnu.no
