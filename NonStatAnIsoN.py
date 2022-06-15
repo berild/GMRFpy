@@ -1,5 +1,6 @@
-from re import S
+#from re import S
 import numpy as np
+import gc
 from scipy import sparse
 from ah3d2 import AH
 from sksparse.cholmod import cholesky
@@ -124,10 +125,10 @@ class NonStatAnIso:
         #opt.set_ftol_rel(5e-5)
         #res = opt.optimize(par)
         if self.grad:
-            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")#,tol = 1e-3)
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
         else:    
-            res = minimize(self.logLike, x0 = par)#, tol = 1e-3)
+            res = minimize(self.logLike, x0 = par, tol = 1e-4)
             res = res['x']
         self.kappa = res[0:27]
         self.gamma = res[27:54]
@@ -446,6 +447,8 @@ class NonStatAnIso:
             like =  -like/(self.S.shape[0]*self.r)
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
+            collected = gc.collect()
+            print("Garbage collector: collected %d objects." % (collected))
             del Q_fac
             del Q_c_fac
             del Qinv

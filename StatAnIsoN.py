@@ -122,10 +122,10 @@ class StatAnIso:
         #opt.set_ftol_rel(5e-5)
         #res = opt.optimize(par)
         if self.grad:
-            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS")#,tol = 1e-3)
+            res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
         else:    
-            res = minimize(self.logLike, x0 = par)#, tol = 1e-3)
+            res = minimize(self.logLike, x0 = par, tol = 1e-4)
             res = res['x']
         self.kappa = res[0]
         self.gamma = res[1]
