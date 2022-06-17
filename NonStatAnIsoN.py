@@ -453,7 +453,7 @@ class NonStatAnIso:
             del Q_c_fac
             del Qinv
             del Qcinv
-            np.savez('SINMOD-NA2-new2.npz', par = par)
+            #np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
