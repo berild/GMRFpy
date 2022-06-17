@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --array=1-20
 #SBATCH -c 10
-#SBATCH --mem=100000000
+#SBATCH --mem=150000
 #SBATCH --job-name="SS_GMRFpy"
 #SBATCH --output=SS_GMRFpy.out
 #SBATCH --mail-user=martinob@ntnu.no 
