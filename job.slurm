@@ -1,9 +1,9 @@
 #!/bin/sh
 #SBATCH --partition=CPUQ
-#SBATCH --account=share-ie-im
+#SBATCH --account=share-ie-imf
 #SBATCH --time=4-00:00:00
 #SBATCH --nodes=1
-#SBATCH --array=1-10
+#SBATCH --array=1-20
 #SBATCH -c 28
 #SBATCH --mem=100000000
 #SBATCH --job-name="SS_GMRFpy"
