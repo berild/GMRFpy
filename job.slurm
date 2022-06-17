@@ -1,13 +1,13 @@
 #!/bin/sh
 #SBATCH --partition=CPUQ
-#SBATCH --account=martinob
+#SBATCH --account=share-ie-im
 #SBATCH --time=4-00:00:00
 #SBATCH --nodes=1
 #SBATCH --array=1-10
 #SBATCH --mem=100000000
 #SBATCH --job-name="SS_GMRFpy"
 #SBATCH --output=SS_GMRFpy.out
-#SBATCH --mail-user=martinob@ntnu.no
+#SBATCH --mail-user=martinob@ntnu.no 
 #SBATCH --mail-type=ALL
 
 WORKDIR=${SLURM_SUBMIT_DIR}
