@@ -12,6 +12,7 @@ importr("Matrix")
 from scipy.optimize import minimize
 import os
 from grid import Grid
+import time
 robj.r.source("rqinv.R")
 
 def delete_rows_csr(mat, indices):
@@ -329,6 +330,8 @@ class NonStatAnIso:
             ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
             dw = vb2*self.grid.evalBH(par = dpar)[:,:,np.newaxis] 
             H = 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
+        gc.collect()
+        del gc.garbage[:]
         return(H)
 
 
@@ -341,6 +344,29 @@ class NonStatAnIso:
         else:
             return(Q_fac)
 
+
+    def simpleMvar(self,Q_fac,Qc_fac,Q,n = 100):
+        z = np.random.normal(size = self.n*n).reshape(self.n,n)
+        tmp = Q_fac.apply_Pt(Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
+        tmp2 = Q_fac.apply_Pt(Qc_fac.solve_Lt(z,use_LDLt_decomposition=False))
+        Q = Q.tocoo()
+        r = Q.row
+        c = Q.col
+        d = Q.data
+        mt = tmp.mean(axis=1)
+        mt2 = tmp2.mean(axis=1)
+        res = ((tmp[r,:] - mt[r,np.newaxis])*(tmp[c,:]-mt[c,np.newaxis])).mean(axis=1)
+        res2 = ((tmp2[r,:] - mt2[r,np.newaxis])*(tmp2[c,:]-mt2[c,np.newaxis])).mean(axis=1)
+        tot=sparse.csc_matrix((res, (r, c)), shape=(self.n,self.n))
+        tot2=sparse.csc_matrix((res2, (r, c)), shape=(self.n,self.n))
+        return((tot,tot2))
+
+    #def simpleMvar(self,Q_fac,n = 500):
+    #    z = np.random.normal(size = self.n*n).reshape(self.n,n)
+    #    tmp = Q_fac.apply_Pt(Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
+    #    return(tmp.var(axis = 1))
+        
+
     def logLike(self, par):
         #mod4: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), rho1(135:162), rho2(162:189), sigma(189)
         data  = self.data
@@ -349,7 +375,6 @@ class NonStatAnIso:
         Dk =  sparse.diags(np.exp(lkappa)) 
         A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        del A_H
         A_mat = self.Dv@Dk - Ah
         Q = A_mat.transpose()@self.iDv@A_mat
         Q_c = Q + self.S.transpose()@self.S*np.exp(par[189])
@@ -365,11 +390,14 @@ class NonStatAnIso:
             data = data.reshape(data.shape[0],1)
             mu_c = mu_c.reshape(mu_c.shape[0],1)
         if self.grad:
-            Qinv = rqinv(Q)
-            Qcinv = rqinv(Q_c)
+            t1 = time.time()
+            Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
+            
+            #Qinv =  rqinv(Q) 
+            #Qcinv = rqinv(Q_c)
+            print(time.time()-t1)
 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[189]/2 - 1/2*Q_c_fac.logdet()*self.r
-            #MMA, 
             g_par = np.zeros(190)
             g_par[189] = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[189])).diagonal().sum()*self.r
             for k in range(7):
@@ -388,7 +416,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 0) 
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -398,7 +425,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 1)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -408,7 +434,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 2)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -418,7 +443,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 3)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -428,7 +452,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 4)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -438,7 +461,6 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
-                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -447,13 +469,9 @@ class NonStatAnIso:
             like =  -like/(self.S.shape[0]*self.r)
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
-            collected = gc.collect()
-            print("Garbage collector: collected %d objects." % (collected))
-            del Q_fac
-            del Q_c_fac
-            del Qinv
-            del Qcinv
-            #np.savez('SINMOD-NA2-new2.npz', par = par)
+            gc.collect()
+            del gc.garbage[:]
+            np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
