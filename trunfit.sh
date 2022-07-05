@@ -5,6 +5,6 @@ read varname1
 echo From which number?
 read varname2
 echo Running model $varname1 from number $varname2
-source ../pyenv/bin/activate
+source ../penv/bin/activate
 
 python3 srunfit.py $varname1 $varname2
