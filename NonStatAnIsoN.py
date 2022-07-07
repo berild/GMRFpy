@@ -359,6 +359,8 @@ class NonStatAnIso:
         res2 = ((tmp2[r,:] - mt2[r,np.newaxis])*(tmp2[c,:]-mt2[c,np.newaxis])).mean(axis=1)
         tot=sparse.csc_matrix((res, (r, c)), shape=(self.n,self.n))
         tot2=sparse.csc_matrix((res2, (r, c)), shape=(self.n,self.n))
+        gc.collect()
+        del gc.garbage[:]
         return((tot,tot2))
 
     #def simpleMvar(self,Q_fac,n = 500):
@@ -417,6 +419,7 @@ class NonStatAnIso:
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
                         A_par = - Ah_par
+                        del A_H_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
@@ -426,6 +429,7 @@ class NonStatAnIso:
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
                         A_par = - Ah_par
+                        del A_H_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
@@ -435,6 +439,7 @@ class NonStatAnIso:
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
                         A_par = - Ah_par
+                        del A_H_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
@@ -444,6 +449,7 @@ class NonStatAnIso:
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
                         A_par = - Ah_par
+                        del A_H_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
@@ -453,6 +459,7 @@ class NonStatAnIso:
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
                         A_par = - Ah_par
+                        del A_H_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
                         for j in range(self.r): 
@@ -461,6 +468,7 @@ class NonStatAnIso:
                         Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
                         A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
                         Ah_par = sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+                        del A_H_par
                         A_par = - Ah_par
                         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
                         g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
@@ -469,6 +477,8 @@ class NonStatAnIso:
             like =  -like/(self.S.shape[0]*self.r)
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
+            del Q_fac
+            del Q_c_fac
             gc.collect()
             del gc.garbage[:]
             np.savez('SINMOD-NA2-new2.npz', par = par)
