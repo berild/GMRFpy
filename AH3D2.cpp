@@ -4,14 +4,14 @@
 class AH
 {
     public:
-        AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double hy, double hz);
+        AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double hy, double hz); //constructor
         int* Row();
         int* Col();
         double* Val();
-    private:
         int* row;
         int* col;
         double* val;
+        ~AH(); //destructor
 };
 // constuctor 
 AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double hy, double hz)
@@ -109,6 +109,13 @@ AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double
         }
     }
 }
+
+AH::~AH(){
+    delete[] row;
+    delete[] col;
+    delete[] val;
+}
+
 // get row indices
 int* AH::Row()
 {
@@ -126,7 +133,6 @@ double* AH::Val()
 {
     return val;
 }
-
 // Define C functions for the C++ class - as ctypes can only talk to C...
 extern "C"
 {
@@ -137,11 +143,7 @@ extern "C"
     double* AH_Val(AH* ah) {return ah->Val();}
     void AH_delete(AH* ah)
     {
-        if (ah)
-        {
-            delete ah;
-            ah = nullptr;
-        }
+        delete ah;
     }
 }
 
