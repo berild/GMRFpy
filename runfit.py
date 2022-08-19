@@ -11,15 +11,17 @@ def fit(version,model,data,vers):
     res = mod.fitTo(data,vers[version,1],vers[version,2], vers[version,0],verbose = False)
     return(res)
 
-def fitPar(model,data):
-    vers = findFits(model,data)
+
+def fitPar(model,data,start):
+    vers = findFits(model,data,start)
     print(str(vers.shape[0])+" of 900")
     fit_ = partial(fit, model=model, data = data, vers=vers)
-    res = Parallel(n_jobs=30,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
+    res = Parallel(n_jobs=20,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
-def findFits(model, data):
-    vers = np.array([[i,j,k] for i in range(1,101) for j in range(1,4) for k in range(1,4)])
+
+def findFits(model, data, start):
+    vers = np.array([[i,j,k] for i in range(start,start+ 30) for j in range(1,4) for k in range(1,4)])
     modstr = np.array(["SI", "SA", "NI","NA"])
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
@@ -36,6 +38,7 @@ def findFits(model, data):
 def main(argv):
     modstr = ["Stationary Isotropic", "Stationary Anistropic", "Non-stationary Simple Anisotropic","Non-stationary Complex Anisotropic","Stationary Anistropic new"]
     mods = None
+    start = int(argv[1])
     if "-" in argv[0]:
         mods = argv[0].split('-',2)
     else:
@@ -45,10 +48,8 @@ def main(argv):
         sys.exit()
     else:
         print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
-        res = fitPar(int(mods[0]),int(mods[1]))
-        os.system('say "Beer time."')
+        res = fitPar(int(mods[0]),int(mods[1]),start)
         return(res)
-
 
 if __name__ == "__main__":
    main(sys.argv[1:])

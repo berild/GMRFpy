@@ -7,4 +7,4 @@ read varname2
 echo Running model $varname1 from number $varname2
 source ../env/bin/activate
 
-python3 srunfit.py $varname1 $varname2
+python3 runfit.py $varname1 $varname2
