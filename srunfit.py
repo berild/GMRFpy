@@ -49,7 +49,6 @@ def main(argv):
     else:
         print('Fitting ' + modstr[int(mods[0])-1] + ' model to ' + modstr[int(mods[1])-1] + ' data') 
         res = fitPar(int(mods[0]),int(mods[1]),start)
-        os.system('say "Beer time."')
         return(res)
 
 
