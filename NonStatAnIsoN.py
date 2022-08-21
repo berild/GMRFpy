@@ -1,18 +1,13 @@
-#from re import S
 import numpy as np
-import gc
 from scipy import sparse
 from ah3d2 import AH
 from sksparse.cholmod import cholesky
 import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 importr("Matrix")
-#robj.r('inla.setOption("smtp" = "pardiso", pardiso.license = "~/OneDrive - NTNU/host_2020/pardiso.lic")')
-#import nlopt
 from scipy.optimize import minimize
 import os
 from grid import Grid
-import time
 robj.r.source("rqinv.R")
 
 def delete_rows_csr(mat, indices):
@@ -105,7 +100,7 @@ class NonStatAnIso:
             self.mvar = rqinv(self.Q).diagonal()
             self.loaded = True
 
-    def fit(self,data, r, S = None,verbose = False, fgrad = True, par = None):
+    def fit(self,data, r, S,verbose = False, fgrad = True, par = None):
         #mod4: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), rho1(135:162), rho2(162:189), sigma(189)
         if par is None:
             par = np.array([-0.5]*190)
@@ -115,14 +110,6 @@ class NonStatAnIso:
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
-        #def f(x,grad):
-        #    tmp = self.logLike(par=x)
-        #    grad[:] = tmp[1]
-        #    return(tmp[0])
-        #opt = nlopt.opt(nlopt.LD_LBFGS,190)
-        #opt.set_max_objective(f)
-        #opt.set_ftol_rel(5e-5)
-        #res = opt.optimize(par)
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
@@ -157,7 +144,6 @@ class NonStatAnIso:
         np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
 
-    # assertion for number of parameters
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
             mods = np.array(['SI','SA','NI','NA'])
@@ -166,10 +152,7 @@ class NonStatAnIso:
             file = './fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
-        self.S = np.zeros((self.grid.M*self.grid.N*self.grid.P))
-        self.S[fitmod['S']*1] = 1
-        self.S = sparse.diags(self.S)
-        self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
+        self.S = sparse.eye(self.n)
         par =fitmod['par']*1
         self.kappa = par[0:27]
         self.gamma = par[27:54]
@@ -184,7 +167,7 @@ class NonStatAnIso:
         Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa))) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
+        self.Q_fac = self.cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
     def sample(self,n = 1, par = None):
@@ -229,7 +212,7 @@ class NonStatAnIso:
         Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa))) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
+        self.Q_fac = self.cholesky(self.Q)
 
     def getH(self,gamma = None,vx = None,vy = None, vz = None,rho1 = None,rho2 = None,d=None,var = None):
         if gamma is None and vx is None and vy is None and vz is None and rho1 is None and rho2 is None:
@@ -324,8 +307,6 @@ class NonStatAnIso:
             ww = vb1*self.grid.evalBH(par = rho1)[:,:,np.newaxis] + vb2*self.grid.evalBH(par = rho2)[:,:,np.newaxis]
             dw = vb2*self.grid.evalBH(par = dpar)[:,:,np.newaxis] 
             H = 2*dw[:,:,:,np.newaxis]*ww[:,:,np.newaxis,:]
-        gc.collect()
-        del gc.garbage[:]
         return(H)
 
 
@@ -353,14 +334,7 @@ class NonStatAnIso:
         res2 = ((tmp2[r,:] - mt2[r,np.newaxis])*(tmp2[c,:]-mt2[c,np.newaxis])).mean(axis=1)
         tot=sparse.csc_matrix((res, (r, c)), shape=(self.n,self.n))
         tot2=sparse.csc_matrix((res2, (r, c)), shape=(self.n,self.n))
-        gc.collect()
-        del gc.garbage[:]
         return((tot,tot2))
-
-    #def simpleMvar(self,Q_fac,n = 500):
-    #    z = np.random.normal(size = self.n*n).reshape(self.n,n)
-    #    tmp = Q_fac.apply_Pt(Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
-    #    return(tmp.var(axis = 1))
         
 
     def logLike(self, par):
@@ -381,8 +355,8 @@ class NonStatAnIso:
                 return(self.like)
         mu_c = Q_c_fac.solve_A(self.S.transpose()@data*np.exp(par[189]))
         if self.r == 1:
-            data = data.reshape(data.shape[0],1)
-            mu_c = mu_c.reshape(mu_c.shape[0],1)
+            data = data.reshape(-1,1)
+            mu_c = mu_c.reshape(-1,1)
         if self.grad:
             #Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
             
@@ -517,11 +491,6 @@ class NonStatAnIso:
             like =  -like/(self.S.shape[0]*self.r)
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
-            del Q_fac
-            del Q_c_fac
-            gc.collect()
-            del gc.garbage[:]
-            np.savez('SINMOD-NA2-new2.npz', par = par)
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like))#, "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
