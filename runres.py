@@ -42,14 +42,14 @@ def print3(res):
         
 
 def print4(res):
-    lines = list(["\u03BA      ","\u03B3      ","vx      ","vy      ","vz     ","\u03C1_1      ","\u03C1_2      ","\u03C4      "])
+    lines = list(["\u03BA       ","\u03B3      ","vx      ","vy      ","vz     ","\u03C1_1      ","\u03C1_2      ","\u03C4       "])
     for j in range(8):
         lines.append("")
         for i in range(9):
             lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
 
-    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
-    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
+    print("DHO      |                         100                          |                        10000                         |                       27000                          \n")
+    print("Real.    |        1        |        10        |       100       |        1        |        10        |       100       |        1        |        10        |        100      \n")
     for j in range(8):
         print(lines[j])
 
