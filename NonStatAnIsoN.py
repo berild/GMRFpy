@@ -111,6 +111,7 @@ class NonStatAnIso:
         self.grad = fgrad
         self.verbose = verbose
         if self.grad:
+            print("Running...")
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
         else:    
