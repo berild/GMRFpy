@@ -74,6 +74,9 @@ class StatAnIso:
         self.grid.basisH()
         self.grid.basisN()
 
+    def getPars(self):
+        return(np.hstack([self.kappa,self.gamma,self.vx,self.vy,self.vz,self.rho1,self.rho2,self.tau]))
+
     def load(self,simple = False):
         if self.loaded:
             return
@@ -88,39 +91,24 @@ class StatAnIso:
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
         if not simple:
-            vv = np.array([self.vx,self.vy,self.vz])
-            vb1 = np.array([-self.vy,self.vx,0])/np.sqrt(self.vx**2 + self.vy**2)
-            vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])/np.sqrt(self.vz**2*self.vx**2 + self.vz**2*self.vy**2 + (self.vx**2 + self.vy**2)**2)
-            ww = self.rho1*vb1 + self.rho2*vb2
-            Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
+            Hs = self.getH()
             Dk =  sparse.diags([np.exp(self.kappa)]*(self.n)) 
-            A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-            Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-            A_mat = self.Dv@Dk - Ah
+            A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
             self.Q = A_mat.transpose()@self.iDv@A_mat
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
             self.mvar = rqinv(self.Q).diagonal()
             self.loaded = True
         
-    def fit(self,data, r, S = None,par = None,verbose = False, fgrad = True):
+    def fit(self,data, r, S,par = None,verbose = False, fgrad = True):
         if par is None:
             par = np.array([-1.5,-1.1,0.51,0.52,0.53,0.43,0.51,2])
-        assert S is not None
         self.data = data
         self.r = r
         self.S = S
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
-        #def f(x,grad):
-        #    tmp = self.logLike(par=x)
-        #    grad[:] = tmp[1]
-        #    return(tmp[0])
-        #opt = nlopt.opt(nlopt.LD_LBFGS,par.size)
-        #opt.set_max_objective(f)
-        #opt.set_ftol_rel(5e-5)
-        #res = opt.optimize(par)
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
@@ -155,8 +143,6 @@ class StatAnIso:
         np.savez(file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
         
-
-    # maybe add some assertions
     def loadFit(self, simmod, dho, r, num, file = None):
         if file is None:
             mods = np.array(['SI','SA','NA1','NA2'])
@@ -165,7 +151,7 @@ class StatAnIso:
             file = './fits/' + mods[simmod-1] + '-SA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
-        self.S = fitmod['S']*1
+        self.S = sparse.eye(self.n)
         par = fitmod['par']*1
         self.kappa = par[0]
         self.gamma = par[1]
@@ -176,21 +162,12 @@ class StatAnIso:
         self.rho2 = par[6]
         self.tau = par[7]
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
-        vv = np.array([self.vx,self.vy,self.vz])
-        vb1 = np.array([-self.vy,self.vx,0])/np.sqrt(self.vx**2 + self.vy**2)
-        vb2 = np.array([- self.vz*self.vx,-self.vz*self.vy ,self.vx**2 + self.vy**2])/np.sqrt(self.vz**2*self.vx**2 + self.vz**2*self.vy**2 + (self.vx**2 + self.vy**2)**2)
-        ww = self.rho1*vb1 + self.rho2*vb2
-        Hs = np.diag(np.exp([self.gamma,self.gamma,self.gamma])) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
+        Hs = self.getH()
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n,self.n))
-        A_mat = self.Dv@Dk - Ah
+        A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
+        self.Q_fac = self.cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
-
-    def getPars(self):
-        return(np.hstack([self.kappa,self.gamma,self.vx,self.vy,self.vz,self.rho1,self.rho2,self.tau]))
 
     def sample(self,n = 1, par = None):
         if par is None:
@@ -230,29 +207,16 @@ class StatAnIso:
             self.rho2 = par[6]
             self.tau = par[7]
             self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
-        vv = np.array([self.vx,self.vy,self.vz])
-        vb1 = np.array([-self.vy,self.vx,0])/np.sqrt(self.vx**2 + self.vy**2)
-        vb2 = np.array([ - self.vz*self.vx,-self.vz*self.vy,self.vx**2 + self.vy**2])/np.sqrt(self.vz**2*self.vx**2 + self.vz**2*self.vy**2 + (self.vx**2 + self.vy**2)**2)
-        ww = self.rho1*vb1 + self.rho2*vb2
-        Hs = np.diag([np.exp(self.gamma),np.exp(self.gamma),np.exp(self.gamma)]) + vv[:,np.newaxis]*vv[np.newaxis,:] + ww[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
-        Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        A_mat = self.Dv@Dk - Ah
+        Hs = self.getH()
+        Dk =  sparse.diags([np.exp(self.kappa)]*self.n)
+        A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
-
-    def cholesky(self,Q):
-        try: 
-            Q_fac = cholesky(Q)
-        except:
-            print("Supernodal or negative definite precision matrix... continue")
-            return(-1)
-        else:
-            return(Q_fac)
+        self.Q_fac = self.cholesky(self.Q)
             
             
-    def getH(self,par,d=None):
+    def getH(self,par=None,d=None):
+        if par is None:
+            par = np.hstack([self.gamma,self.vx,self.vy,self.vz,self.rho1,self.rho2])
         if d is None:
             vv = np.array([par[1],par[2],par[3]])
             vb1 = np.array([-par[2],par[1],0])/np.sqrt(par[1]**2+par[2]**2)
@@ -317,14 +281,36 @@ class StatAnIso:
             H = 2*dw[:,np.newaxis]*ww[np.newaxis,:] + np.zeros((self.n,6,3,3))
         return(H)
 
+    def cholesky(self,Q):
+        try: 
+            Q_fac = cholesky(Q)
+        except:
+            print("Supernodal or negative definite precision matrix... continue")
+            return(-1)
+        else:
+            return(Q_fac)
+
+    def simpleMvar(self,Q_fac,Qc_fac,Q,n = 200):
+        z = np.random.normal(size = self.n*n).reshape(self.n,n)
+        tmp = Q_fac.apply_Pt(Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
+        tmp2 = Q_fac.apply_Pt(Qc_fac.solve_Lt(z,use_LDLt_decomposition=False))
+        Q = Q.tocoo()
+        r = Q.row
+        c = Q.col
+        d = Q.data
+        mt = tmp.mean(axis=1)
+        mt2 = tmp2.mean(axis=1)
+        res = ((tmp[r,:] - mt[r,np.newaxis])*(tmp[c,:]-mt[c,np.newaxis])).mean(axis=1)
+        res2 = ((tmp2[r,:] - mt2[r,np.newaxis])*(tmp2[c,:]-mt2[c,np.newaxis])).mean(axis=1)
+        tot=sparse.csc_matrix((res, (r, c)), shape=(self.n,self.n))
+        tot2=sparse.csc_matrix((res2, (r, c)), shape=(self.n,self.n))
+        return((tot,tot2))
+
     def logLike(self, par):
-        #os.write(1, b'begining  \n')
         data  = self.data
         Hs = self.getH(par[1:7])
         Dk =  np.exp(par[0])*sparse.eye(self.n) 
-        A_H = AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-        Ah = sparse.csc_matrix((A_H.Val(), (A_H.Row(), A_H.Col())), shape=(self.n, self.n))
-        A_mat = self.Dv@Dk - Ah
+        A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         Q = A_mat.transpose()@self.iDv@A_mat
         Q_c = Q + self.S.transpose()@self.S*np.exp(par[7])
         Q_fac = self.cholesky(Q)
@@ -336,41 +322,35 @@ class StatAnIso:
                 return(self.like)
         mu_c = Q_c_fac.solve_A(self.S.transpose()@data*np.exp(par[7]))
         if self.r == 1:
-            data = data.reshape(data.shape[0],1)
-            mu_c = mu_c.reshape(mu_c.shape[0],1)
+            data = data.reshape(-1,1)
+            mu_c = mu_c.reshape(-1,1)
         if self.grad:
+            #Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q) 
             Qinv = rqinv(Q)
             Qcinv = rqinv(Q_c)
-            # these are missing
-            # implement a function for Hs for simplicity
+            
             Hs_par = self.getH(par[1:7],d=0)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_gamma = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             Hs_par = self.getH(par[1:7],d=1)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_vx = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             Hs_par = self.getH(par[1:7],d=2)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_vy = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             Hs_par = self.getH(par[1:7],d=3)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_vz = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             Hs_par = self.getH(par[1:7],d=4)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_rho1 = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             Hs_par = self.getH(par[1:7],d=5)
-            A_H_par = AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            A_par = - sparse.csc_matrix((A_H_par.Val(), (A_H_par.Row(), A_H_par.Col())), shape=(self.n, self.n))
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             Q_rho2 = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
 
             A_kappa = Dk@self.Dv
@@ -402,7 +382,6 @@ class StatAnIso:
             if self.verbose:
                 print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]),"vx = %2.2f"%par[2],"vy = %2.2f"%par[3],
                 "vz = %2.2f"%(par[4]),"\u03C1_1 = %2.2f"%(par[5]),"\u03C1_2 = %2.2f"%(par[6]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[7])))
-            #os.write(1, b'middle \n')
             return((like,jac))
         else: 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*par[7]*self.r/2 - 1/2*Q_c_fac.logdet()*self.r
