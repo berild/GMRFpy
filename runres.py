@@ -17,7 +17,7 @@ def print1(res):
     print(lines[2])
 
 def print2(res):
-    lines = list(["\u03BA      ","\u03B3_1      ","\u03B3_2      ","\u03B3_3      ","\u03C1_1      ","\u03C1_2      ","\u03C1_3      ","\u03C4      "])
+    lines = list(["\u03BA      ","\u03B3      ","vx      ","vy      ","vz     ","\u03C1_1      ","\u03C1_2      ","\u03C4      "])
     for j in range(8):
         lines.append("")
         for i in range(9):
@@ -42,20 +42,7 @@ def print3(res):
         
 
 def print4(res):
-    lines = list(["\u03BA      ","\u03B3_1      ","\u03B3_2      ","\u03B3_3      ","\u03C1_1      ","\u03C1_2      ","\u03C1_3      ","\u03C4      "])
-    for j in range(8):
-        lines.append("")
-        for i in range(9):
-            lines[j] = lines[j] + "| %5.4f"%res[0][j,i] + "(%.5f) "%res[1][j,i]
-
-    print("DHO    |                       100                      |                     10000                      |                     27000             \n")
-    print("Real.  |       1       |       10       |      100      |       1       |       10       |      100      |       1       |       10       |       100    \n")
-    for j in range(8):
-        print(lines[j])
-
-
-def print5(res):
-    lines = list(["\u03BA      ","\u03B3_x      ","\u03B3_y      ","\u03B3_z     ","vx      ","vy      ","vz     ","\u03C4      "])
+    lines = list(["\u03BA      ","\u03B3      ","vx      ","vy      ","vz     ","\u03C1_1      ","\u03C1_2      ","\u03C4      "])
     for j in range(8):
         lines.append("")
         for i in range(9):
@@ -108,8 +95,6 @@ def main(argv):
         print3(res)
     elif model == 4:
         print4(res)
-    elif model == 5:
-        print5(res)
     return(True)
 
 if __name__ == "__main__":
