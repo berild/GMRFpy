@@ -22,11 +22,6 @@ class Grid:
         self.bsH = None
 
     def setGrid(self, M = None, N = None, P = None, x = None, y = None, z = None):
-        # define after N, M, P and hx, hy, hz
-        # define after N, M, P and A, B, C
-        # define after hx, hy, hz and A, B, C
-        # define after x, y, z and hx, hy, hz
-        # define after x, y, x snf N, M, P 
         self.x = x
         self.y = y
         self.z = z
