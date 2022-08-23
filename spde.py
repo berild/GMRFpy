@@ -57,6 +57,9 @@ class spde:
         self.grid.setGrid(M = M, N = N, P = P, x = x, y = y, z = z)
         self.mod.setGrid(self.grid)
 
+    def setQ(self,par = None,S = None):
+        self.mod.setQ(par=par,S=S)
+
     # fix par for models
     def define(self, model = None, par = None):
         assert(model is not None or self.model is not None)
