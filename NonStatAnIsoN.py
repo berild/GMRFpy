@@ -196,7 +196,7 @@ class NonStatAnIso:
         np.savez('./simulations/NA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
-    def setQ(self,par = None):
+    def setQ(self,par = None,S = None):
         if par is None:
             assert(self.kappa is not None and self.gamma is not None and self.vx is not None and self.vy is not None and self.vz is not None and self.rho1 is not None and self.rho2 is not None and self.sigma is not None)
         else:
@@ -209,6 +209,8 @@ class NonStatAnIso:
             self.rho2 = par[162:189]
             self.tau = par[189]
             self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
+        if S is not None:
+            self.S = S
         Hs = self.getH()
         Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa))) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
