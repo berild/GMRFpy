@@ -46,7 +46,7 @@ class mission:
     def init_auv(self):
         assert self.emulator_exists, "No emulator defined"
         assert self.assimilate_exists, "No assimilation defined"
-        assert self.mu, "No prior mean defined"
+        assert self.mu is not None, "No prior mean defined"
         self.auv = auv(self.mod,self.mu,self.mdata['sd'].mean())
         self.auv_exists = True
 
@@ -56,7 +56,7 @@ class mission:
             self.auv.update(self.mdata['data'][idx],self.mdata['idx'][idx])
         elif fold is not None:
             if hasattr(fold, "__len__"):
-                self.auv.update(self.mdata[np.array([x in np.arange(1,4) for x in self.mdata['fold']])],keep = keep)
+                self.auv.update(self.mdata[np.array([x in fold for x in self.mdata['fold']])],keep = keep)
             else:
                 self.auv.update(self.mdata[self.mdata['fold']==fold],keep = keep)
         else:
@@ -68,13 +68,13 @@ class mission:
             return(self.auv.mu[self.mdata['idx'][idx]])
         elif fold is not None:
             if hasattr(fold, "__len__"):
-                return(self.auv.mu[self.mdata['idx'][np.array([x in np.arange(1,4) for x in self.mdata['fold']])]])
+                return(self.auv.mu[self.mdata['idx'][np.array([x in fold for x in self.mdata['fold']])]])
             else:
                 return(self.auv.mu[self.mdata['idx'][self.mdata['fold']==fold]])
         else:
             return(self.auv.mu)
 
-    def cross_validation(self,version = 1, fold = None):
+    def cross_validation(self,version = 1, fold = None, simple = False):
         assert self.auv_exists, "No AUV defined"
         if fold is None:
             if len(self.mdata['fold'].unique()) == 1:
@@ -87,10 +87,10 @@ class mission:
             for i in range(len(fold)):
                 self.update(fold = np.delete(fold,i))
                 tmp = self.predict(fold = fold[i])
-                sigma = self.auv.mvar()
+                sigma = np.sqrt(self.auv.mvar(simple = simple))
                 err[i,0] = self.RMSE(tmp,self.mdata['data'][self.mdata['fold']==fold[i]])
-                err[i,1] = self.CRPS(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma)
-                err[i,2] = self.logScore(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma)
+                err[i,1] = self.CRPS(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
+                err[i,2] = self.logScore(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
                 self.auv.loadKeep()
             err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
         return(err_df)
@@ -248,7 +248,8 @@ class mission:
         S = sparse.diags((data[:,0]>0)*1)
         tmp = np.array(np.where(S.diagonal() != 0)).flatten()
         self.S = delete_rows_csr(S.tocsr(),np.where(S.diagonal() == 0))
-        self.edata = S.transpose()@S@data
+        self.edata = self.S.transpose()@self.S@data
+        self.mod.setQ(S = self.S)
 
         # Grid
         self.lon = np.array(nc['gridLons'][:,:])
@@ -277,7 +278,7 @@ class mission:
             tmp[:,2]=[self.slat[0],self.slat[(N-1)*M*P + 0*P + 0], self.slat[(0)*M*P + (M-1)*P + 0],self.slat[(N-1)*M*P + (M-1)*P + 0]]
             tmp[:,3]=[self.slon[0],self.slon[(N-1)*M*P + 0*P + 0], self.slon[(0)*M*P + (M-1)*P + 0],self.slon[(N-1)*M*P + (M-1)*P + 0]]
             np.save('./mission/' + self.file + '/grid.npy', tmp)
-            self.mod.mod.setQ(par=par)
+            self.mod.mod.setQ()
             Q = self.mod.mod.Q.tocoo()
             r = Q.row
             c = Q.col
@@ -296,12 +297,18 @@ class mission:
             idx = np.nanargmin((time_emu-time_data[idx])**2)
             self.mu = self.edata[:,idx]
         if version2 == "mf":
-            self.muf = (self.S@self.edata).mean(axis = 1)
+            data = self.S@self.edata
+            self.muf = data - (data).mean(axis = 1)[:,np.newaxis]
         elif version2 == "tfc":
             data = self.S@self.edata
             mu = data.mean(axis = 1)
+            rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
+            self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+        elif version2 == "tf":
+            data = self.S@self.edata
+            mu = data.mean(axis = 1)
             rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])
-            self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.3,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+            self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
 
     def logScore(self,pred,truth,sigma):
         return(- (norm.logpdf(truth,loc = pred,scale = sigma).mean()))
@@ -331,8 +338,8 @@ class mission:
                 if value is None:
                     assert self.mu is not None, "No mean assigned"
                     value = self.mu
-                cmin = 6
-                cmax = 32
+                cmin = value.min()+2
+                cmax = value.max()+2
                 if filename is None:
                     filename = "mean"
             else: 
@@ -395,4 +402,5 @@ class mission:
                             yaxis_visible=False,zaxis_visible=False,camera = camera)
         fig.update_layout(autosize=False,
                         width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
-        fig.write_image("./mission/" + self.file + "/figures/" + filename + ".png",engine="orca",scale=1)
+        fig.write_html("test.html", auto_open = True)
+        #fig.write_image("./mission/" + self.file + "/figures/" + filename + ".png",engine="orca",scale=1)
