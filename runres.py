@@ -100,7 +100,7 @@ def main(argv):
             res2[1][i,:] = res[1][i*27:(i+1)*27,:].mean(axis=0)
         res2[0][7,:] = res[0][189,:]
         res2[1][7,:] = res[1][189,:]
-        print4(res)
+        print4(res2)
     return(True)
 
 if __name__ == "__main__":
