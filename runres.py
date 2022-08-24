@@ -94,6 +94,12 @@ def main(argv):
     elif model == 3:
         print3(res)
     elif model == 4:
+        res2 = list([np.zeros((8,9)),np.zeros((8,9))])
+        for i in range(7):
+            res2[0][i,:] = res[0][i*27:(i+1)*27,:].mean(axis=0)
+            res2[1][i,:] = res[1][i*27:(i+1)*27,:].mean(axis=0)
+        res2[0][7,:] = res[0][189,:]
+        res2[1][7,:] = res[1][189,:]
         print4(res)
     return(True)
 
