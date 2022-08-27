@@ -57,7 +57,7 @@ class spde:
         self.grid.setGrid(M = M, N = N, P = P, x = x, y = y, z = z)
         self.mod.setGrid(self.grid)
 
-    def setQ(self,par = None,S = None):
+    def setQ(self,par = None,S = None,simple = False):
         self.mod.setQ(par=par,S=S)
 
     # fix par for models
@@ -90,7 +90,7 @@ class spde:
             self.define(model = model)
         self.mod.load(simple = simple)
 
-    def loadFit(self, simmod, dho, r, num, model = None, file = None):
+    def loadFit(self, simmod=None, dho=None, r=None, num=None, model = None, file = None):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
@@ -133,13 +133,13 @@ class spde:
             self.define(model = model)
         return(self.mod.sim())
 
-    def sample(self, n = 1,model = None, par = None):
+    def sample(self, n = 1,model = None, par = None,simple = False):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
         else:
             self.define(model = model)
-        return(self.mod.sample(n = n, par = par))
+        return(self.mod.sample(n = n, par = par,simple = simple))
 
     def Mvar(self):
         self.mod.setQ()
@@ -174,7 +174,7 @@ class spde:
                     pos = np.array([self.grid.M/2,self.grid.N/2, self.grid.P/2])
                 value = self.Corr(pos)
             elif version == "real":
-                value = self.sample()
+                value = self.sample(simple = True)
         fig = go.Figure(go.Volume(
             x=self.grid.sx,
             y=self.grid.sy,
