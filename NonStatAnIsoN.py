@@ -90,11 +90,11 @@ class NonStatAnIso:
         self.rho2 = simmod['rho2']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
+        Hs = self.getH()
+        Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa)))
+        A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+        self.Q = A_mat.transpose()@self.iDv@A_mat
         if not simple:
-            Hs = self.getH()
-            Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa)))
-            A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-            self.Q = A_mat.transpose()@self.iDv@A_mat
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
             self.mvar = rqinv(self.Q).diagonal()
@@ -130,7 +130,7 @@ class NonStatAnIso:
 
     def fitTo(self,simmod,dho,r,num,verbose = False, fgrad = True, par = None):
         if par is None:
-            par = np.array([-0.5]*190)
+            par = np.load('./simmodels/initNA.npy')
         mods = np.array(['SI','SA','NI','NA'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
@@ -145,10 +145,10 @@ class NonStatAnIso:
         np.savez('./fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
 
-    def loadFit(self, simmod, dho, r, num, file = None):
+    def loadFit(self, simmod=None, dho=None, r=None, num=None, file = None):
         if file is None:
             mods = np.array(['SI','SA','NI','NA'])
-            dhos = np.array(['100','1000','10000'])
+            dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
             file = './fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
@@ -171,7 +171,7 @@ class NonStatAnIso:
         self.Q_fac = self.cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
-    def sample(self,n = 1, par = None):
+    def sample(self,n = 1, par = None,simple = False):
         if par is None:
             assert(self.kappa is not None and self.gamma is not None and self.vx is not None and self.vy is not None and self.vz is not None and self.rho1 is not None and self.rho2 is not None and self.sigma is not None)
         if self.Q is None or self.Q_fac is None:
@@ -179,7 +179,10 @@ class NonStatAnIso:
         data = np.zeros((self.n,n))
         for i in range(n):
             z = np.random.normal(size = self.n)
-            data[:,i] = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n)*np.exp(self.sigma)
+            if simple:
+                data[:,i] = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
+            else:
+                data[:,i] = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n)*np.exp(self.sigma)
         return(data)
 
     def sim(self):
@@ -196,7 +199,7 @@ class NonStatAnIso:
         np.savez('./simulations/NA-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
-    def setQ(self,par = None,S = None):
+    def setQ(self,par = None,S = None, simple = False):
         if par is None:
             assert(self.kappa is not None and self.gamma is not None and self.vx is not None and self.vy is not None and self.vz is not None and self.rho1 is not None and self.rho2 is not None and self.sigma is not None)
         else:
@@ -215,7 +218,8 @@ class NonStatAnIso:
         Dk =  sparse.diags(np.exp(self.grid.evalB(par = self.kappa))) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = self.cholesky(self.Q)
+        if not simple:
+            self.Q_fac = self.cholesky(self.Q)
 
     def getH(self,gamma = None,vx = None,vy = None, vz = None,rho1 = None,rho2 = None,d=None,var = None):
         if gamma is None and vx is None and vy is None and vz is None and rho1 is None and rho2 is None:
@@ -361,10 +365,10 @@ class NonStatAnIso:
             data = data.reshape(-1,1)
             mu_c = mu_c.reshape(-1,1)
         if self.grad:
-            #Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
+            Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
             
-            Qinv =  rqinv(Q) 
-            Qcinv = rqinv(Q_c)
+            #Qinv =  rqinv(Q) 
+            #Qcinv = rqinv(Q_c)
 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[189]/2 - 1/2*Q_c_fac.logdet()*self.r
             g_par = np.zeros(190)
@@ -400,7 +404,7 @@ class NonStatAnIso:
             #     Q_rho1 = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
             #     g_par[135 + i] = 1/2*((Qinv - Qcinv)@Q_rho1).diagonal().sum()*self.r
                 
-            #     Hs_par[:] = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
+            #     Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
             #     # change HS and A also and delete
             #     A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
             #     Q_rho2 = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
@@ -418,78 +422,76 @@ class NonStatAnIso:
             #             g_par[189] = g_par[189] + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[189]))
             #             like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[189])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
 
-            #     del Q_kappa, Q_gamma, Q_vx, Q_vy, Q_vz, Q_rho1, Q_rho2
-
-            for i in range(27):
-                for k in range(7):
-                    if k==0:
-                        Dk2 = sparse.diags(self.grid.bs[:,i]*np.exp(lkappa))
-                        A_par = self.Dv@Dk2
-                    else:
-                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = k-1) 
-                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-                    Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-                    g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-                    for j in range(self.r): 
-                        g_par[27*k+i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-                        if (i==0) and (k==0):
-                            g_par[189] = g_par[189] + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[189]))
-                            like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[189])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
-
-            # for k in range(7):
-            #     for i in range(27):
-            #         if k==0: # kappa
+            # for i in range(27):
+            #     for k in range(7):
+            #         if k==0:
             #             Dk2 = sparse.diags(self.grid.bs[:,i]*np.exp(lkappa))
             #             A_par = self.Dv@Dk2
-            #             Q_par = A_par.transpose()@self.iDv@A_mat + A_mat.transpose()@self.iDv@A_par
-            #             g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[k*27 + i] = g_par[k*27 + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #                 if i==0:
-            #                     g_par[189] = g_par[189] + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[189]))
-            #                     like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[189])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
-            #         elif k==1: # gamma
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 0) 
+            #         else:
+            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = k-1) 
             #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k+i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #         elif k==2: # vx
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 1)
-            #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #         elif k==3: # vy
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 2)
-            #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k + i] = g_par[27*k+i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #         elif k==4: # vz
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 3)
-            #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #         elif k==5: # rho1
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 4)
-            #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
-            #         elif k==6: # rho2 
-            #             Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
-            #             A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
-            #             Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
-            #             g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
-            #             for j in range(self.r): 
-            #                 g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])   
+            #         Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+            #         g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+            #         for j in range(self.r): 
+            #             g_par[27*k+i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+            #             if (i==0) and (k==0):
+            #                 g_par[189] = g_par[189] + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[189]))
+            #                 like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[189])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
+
+            for k in range(7):
+                for i in range(27):
+                    if k==0: # kappa
+                        Dk2 = sparse.diags(self.grid.bs[:,i]*np.exp(lkappa))
+                        A_par = self.Dv@Dk2
+                        Q_par = A_par.transpose()@self.iDv@A_mat + A_mat.transpose()@self.iDv@A_par
+                        g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[k*27 + i] = g_par[k*27 + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                            if i==0:
+                                g_par[189] = g_par[189] + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[189]))
+                                like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[189])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
+                    elif k==1: # gamma
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 0) 
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[k*27 + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k+i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                    elif k==2: # vx
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 1)
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                    elif k==3: # vy
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 2)
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k + i] = g_par[27*k+i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                    elif k==4: # vz
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 3)
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                    elif k==5: # rho1
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 4)
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])
+                    elif k==6: # rho2 
+                        Hs_par = self.getH(gamma = par[27:54],vx = par[54:81], vy = par[81:108], vz = par[108:135],rho1=par[135:162],rho2=par[162:189],d=i,var = 5)
+                        A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs_par,self.grid.hx,self.grid.hy,self.grid.hz)
+                        Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+                        g_par[27*k + i] = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r
+                        for j in range(self.r): 
+                            g_par[27*k + i] = g_par[27*k + i] + (- 1/2*mu_c[:,j].transpose()@Q_par@mu_c[:,j])   
             
             like =  -like/(self.S.shape[0]*self.r)
             jac =  -g_par/(self.S.shape[0]*self.r)
