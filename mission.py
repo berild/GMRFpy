@@ -131,16 +131,13 @@ class mission:
         rsal = df[' value (psu)'].to_numpy()[idx]
         rz = df[' depth (m)'].to_numpy()[idx]
         timestamp = df['timestamp'].to_numpy()[idx]
-
-        tmpx = R*(rlon-self.lon[0,0])*np.pi/180*np.cos((self.lat.min() + self.lat.max())/180*np.pi/2)
-        tmpy = R*(rlat - self.lat[0,0])*np.pi/180
-        rot = np.arctan((R*(self.lat[0,148] - self.lat[0,0])*np.pi/180)/(R*(self.lon[0,148]-self.lon[0,0])*np.pi/180*np.cos((self.lat.min() + self.lat.max())/180*np.pi/2)))
-        rx = tmpx*np.cos(rot) + tmpy*np.sin(rot)
-        ry = - tmpx*np.sin(rot) + tmpy*np.cos(rot)
-        
-        idxs = np.zeros(rx.size)
-        for i in range(rx.size):
-            idxs[i] = np.nanargmin((ry[i]-self.mod.grid.y)**2)*self.mod.grid.M*self.mod.grid.P +  np.nanargmin((rx[i]-self.mod.grid.x)**2)*self.mod.grid.P + np.nanargmin((rz[i]-self.mod.grid.z)**2)
+        idxs = np.zeros(rsal.size)
+        for i in range(rsal.size):
+            tmp = np.nanargmin(np.sqrt((rlat[i]-self.glat)**2 + (rlon[i]-self.glon)**2))
+            tmpx= np.floor(tmp/self.mod.grid.N).astype("int32")
+            tmpy= tmp - tmpx*self.mod.grid.N
+            tmpz= np.nanargmin((rz[i]-self.mod.grid.z)**2)
+            idxs[i] = tmpy*self.mod.grid.M*self.mod.grid.P  + tmpx*self.mod.grid.P + tmpz
         si = 0
         u_idx = list()
         u_data = list()
@@ -262,6 +259,8 @@ class mission:
         # Grid
         self.lon = np.array(nc['gridLons'][:,:])
         self.lat = np.array(nc['gridLats'][:,:])
+        self.glat = self.lat[ytmp[0]:ytmp[1],xtmp[0]:xtmp[1]].transpose().flatten()
+        self.glon = self.lon[ytmp[0]:ytmp[1],xtmp[0]:xtmp[1]].transpose().flatten()
         zll = np.array(nc['zc'][:])
         self.slon = np.zeros(M*N*P)
         self.slat = np.zeros(M*N*P)
@@ -325,7 +324,7 @@ class mission:
 
 
     def logScore(self,pred,truth,sigma):
-        return(- (norm.logpdf(truth,loc = pred,scale = sigma).mean()))
+        return(- (norm.logpdf(pred,loc = truth,scale = sigma).mean()))
 
     def CRPS(self,pred,truth,sigma):
         z = (truth - pred)/sigma
