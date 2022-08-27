@@ -39,6 +39,14 @@ class mission:
         assert self.emulator_exists, "No emulator defined"
         assert self.muf is not None, "No model mean defined"
         print("Starting model fit of model "+ str(self.mod.model))
+        if par is None:
+            par = np.hstack([np.random.normal(-1,0.5,27),
+                 np.random.normal(-1,0.5,27),
+                 np.random.normal(1,0.5,27),
+                 np.random.normal(1,0.5,27),
+                 np.random.normal(0.2,0.2,27),
+                 np.random.normal(0.5,0.5,27),
+                 np.random.normal(0.5,0.5,27),3])
         self.mod.fit(data=self.muf, par = par,r=self.muf.shape[1],S=self.S,verbose= verbose)
         par = self.mod.getPars()
         np.savez("./mission/" + self.file + '/model_' + str(self.mod.model)+ "_new" + '.npz', par = par)
@@ -305,10 +313,16 @@ class mission:
             rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
             self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
         elif version2 == "tf":
+            lag = 3
             data = self.S@self.edata
-            mu = data.mean(axis = 1)
-            rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])
-            self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+            tmean = np.zeros(data.shape)
+            for i in range(data.shape[1]):
+                if (i < lag):
+                    tmean[:,i] = data[:,:(i+1)].mean(axis = 1)
+                else:
+                    tmean[:,i] = data[:,(i-lag):(i+1)].mean(axis=1)
+            self.muf = (data - tmean) + np.random.normal(0,0.2,data.shape[0]*data.shape[1]).reshape(data.shape[0],data.shape[1])
+
 
     def logScore(self,pred,truth,sigma):
         return(- (norm.logpdf(truth,loc = pred,scale = sigma).mean()))
