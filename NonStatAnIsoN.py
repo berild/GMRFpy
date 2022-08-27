@@ -365,10 +365,10 @@ class NonStatAnIso:
             data = data.reshape(-1,1)
             mu_c = mu_c.reshape(-1,1)
         if self.grad:
-            Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
+            #Qinv,Qcinv = self.simpleMvar(Q_fac,Q_c_fac,Q)
             
-            #Qinv =  rqinv(Q) 
-            #Qcinv = rqinv(Q_c)
+            Qinv =  rqinv(Q) 
+            Qcinv = rqinv(Q_c)
 
             like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[189]/2 - 1/2*Q_c_fac.logdet()*self.r
             g_par = np.zeros(190)
