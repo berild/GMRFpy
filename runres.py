@@ -77,16 +77,31 @@ def main(argv):
             tr = np.where(r==tmp[1][1:])[0][0] + 1
             pars[count,:] = np.hstack([par,tdho,tr])
             count = count + 1
-    np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
+    #np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-pars",pars = pars)
     res = list([np.zeros((npars,9)),np.zeros((npars,9))])
     mod = spde(model = model)
     mod.load(simple = True)
     truth = mod.getPars()
     for i in range(3): #dho
-        for j in range(3): #r
-            res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars].mean(axis=1) - truth
-            res[1][:,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars] - truth)**2,axis = 1)
-    np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
+    for j in range(3): #r
+        if model == 4:
+            res[0][:54,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54].mean(axis=0) - truth[:54]
+            res[1][:54,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54] - truth[:54])**2,axis = 0)
+            res[0][54:189,(i)*3 + j] = np.mean(np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189])- np.abs(truth[54:189]))
+            res[1][54:189,(i)*3 + j] = np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189]))**2,axis = 0)
+            res[0][189,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189].mean(axis=0) - truth[189]
+            res[1][189,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189] - truth[189])**2,axis = 0)
+        elif model == 2:
+            res[0][:2,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2].mean(axis=0) - truth[:2]
+            res[1][:2,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2] - truth[:2])**2,axis = 0)
+            res[0][2:7,(i)*3 + j] = np.mean(np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7])- np.abs(truth[2:7]))
+            res[1][2:7,(i)*3 + j] = np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]) - np.abs(truth[2:7]))**2,axis = 0)
+            res[0][7:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7:].mean(axis=0) - truth[7:]
+            res[1][7:,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7:] - truth[7:])**2,axis = 0)
+        else: 
+            res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:].mean(axis=0) - truth
+            res[1][:,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:] - truth)**2,axis = 0)
+    #np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
     if model == 1:
         print1(res)
     elif model == 2:
