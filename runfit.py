@@ -16,7 +16,7 @@ def fitPar(model,data,start):
     vers = findFits(model,data,start)
     print(str(vers.shape[0])+" of 900")
     fit_ = partial(fit, model=model, data = data, vers=vers)
-    res = Parallel(n_jobs=20,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
+    res = Parallel(n_jobs=10,verbose = 100)(delayed(fit_)(i) for i in range(vers.shape[0]))
     return(res)
 
 
