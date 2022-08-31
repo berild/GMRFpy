@@ -101,6 +101,18 @@ class mission:
                 err[i,2] = self.logScore(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
                 self.auv.loadKeep()
             err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
+        elif version ==2:
+            err = np.zeros((len(fold),3))
+            for i in range(len(fold)):
+                self.update(fold = fold[i])
+                tmpidx = np.array([x in np.delete(fold,i) for x in self.mdata['fold']])
+                tmp = self.predict(idx = tmpidx)
+                sigma = np.sqrt(self.auv.mvar(simple = simple))
+                err[i,0] = self.RMSE(tmp,self.mdata['data'][tmpidx])
+                err[i,1] = self.CRPS(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
+                err[i,2] = self.logScore(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
+                self.auv.loadKeep()
+            err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
         return(err_df)
 
     def assimilate(self, idx = None, save = False, plot = False, processing = False, model = 4):
