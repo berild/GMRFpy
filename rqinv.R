@@ -63,8 +63,9 @@ rqinv = function(A)
   if  (Sys.info()['sysname']=="Linux"){
     where = "/home/ahomeb/m/martinob/R/x86_64-pc-linux-gnu-library/4.2/INLA/bin/linux/64bit/inla.run"
     #where = "/cluster/home/martinob/R/x86_64-pc-linux-gnu-library/4.1/INLA/bin/linux/64bit/inla.run"
-  }else{
-    where = "~/Library/R/4.0/library/INLA/bin/mac/64bit/inla.run" 
+  }else{#/Library/Frameworks/R.framework/Versions/4.0/Resources/library/INLA/bin/linux/64bit
+    #where = "~/Library/R/4.0/library/INLA/bin/linux/64bit/inla.run" 
+    where = "/Library/Frameworks/R.framework/Versions/4.0/Resources/library/INLA/bin/mac/64bit/inla.run"
   }
   system(paste(where, "-s -m qinv", filename, constr.file, out.file))
 
