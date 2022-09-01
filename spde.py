@@ -133,14 +133,15 @@ class spde:
             self.define(model = model)
         return(self.mod.sim())
 
-    def sample(self, n = 1,model = None, par = None,simple = False):
+    def sample(self, n = 1,model = None, Q_fac = None, sigma = None,simple = False):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
         else:
             self.define(model = model)
-        return(self.mod.sample(n = n, par = par,simple = simple))
-
+        #return(self.mod.sample(n = n,Q_fac = Q_fac, sigma = sigma, simple = simple))
+        return(self.mod.sample(n = n))
+        
     def Mvar(self):
         self.mod.setQ()
         self.mod.mvar = rqinv(self.mod.Q).diagonal()
