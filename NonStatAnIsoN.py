@@ -193,7 +193,8 @@ class NonStatAnIso:
         return(data)
 
     def sim(self):
-        self.load()
+        if not self.loaded:
+            self.load()
         mods = []
         for file in os.listdir("./simulations/"):
             if file.startswith("NA-"):
