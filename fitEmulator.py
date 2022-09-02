@@ -4,7 +4,7 @@ import sys
 
 def main(argv):
     mis = mission(argv[0])
-    mis.emulator(model=int(argv[0]),pars = True)
+    mis.emulator(model=int(argv[1]),pars = True)
     if mis.muf is None:
         mis.mean(version2 = "tfc")
     if int(argv[1])==4:
