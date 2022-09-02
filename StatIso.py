@@ -43,6 +43,8 @@ class StatIso:
         self.tau = np.log(0.5) if par is None else par[2]
         self.Dv = self.V*sparse.eye(self.n)
         self.iDv = 1/self.V*sparse.eye(self.n)
+        self.grid.basisH()
+        self.grid.basisN()
         self.Q = None
         self.Q_fac = None
         self.mvar = None
@@ -51,10 +53,12 @@ class StatIso:
         self.S = None
         self.opt_steps = 0
         self.verbose = False
+        self.likediff = 1000
         self.grad = True
         self.like = 10000
         self.jac = np.array([-100]*3)
         self.loaded = False
+        self.truth = None
     
     def setGrid(self,grid):
         self.grid = grid
@@ -70,45 +74,47 @@ class StatIso:
 
         
     def load(self,simple = False):
-        if self.loaded:
-            return
         simmod = np.load("./simmodels/SI.npz")
         self.kappa = simmod['kappa']*1
         self.gamma = simmod['gamma']*1
         self.sigma = simmod['sigma']*1
         self.tau = np.log(1/np.exp(self.sigma)**2)
+        Hs = np.exp(self.gamma)*np.eye(3) + np.zeros((self.n,6,3,3))
+        Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
+        A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+        self.Q = A_mat.transpose()@self.iDv@A_mat
         if not simple:
-            Hs = np.exp(self.gamma)*np.eye(3) + np.zeros((self.n,6,3,3))
-            Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
-            A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
-            self.Q = A_mat.transpose()@self.iDv@A_mat
             self.Q_fac = self.cholesky(self.Q)
-            self.mvar = rqinv(self.Q).diagonal()
-            self.loaded = True
+            assert(self.Q_fac != -1)
     
-    def fit(self,data, r, S, par = None,verbose = False, grad = True):
+    def fit(self,data, r, S, par = None,verbose = False, fgrad = True):
         if par is None:
-            par = np.array([-1,0.5,2])
+            par = np.array([-1,-1,3])
         self.data = data
         self.r = r  
         self.S = S
         self.opt_steps = 0
-        self.grad = grad
+        self.grad = fgrad
         self.verbose = verbose
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
+            res = res['x']
         else:    
             res = minimize(self.logLike, x0 = par, tol = 1e-4)
-        self.kappa = res['x'][0]
-        self.gamma = res['x'][1]
-        self.tau = res['x'][2]
+            res = res['x']
+        self.kappa = res[0]
+        self.gamma = res[1]
+        self.tau = res[2]
         self.sigma = np.log(np.sqrt(1/np.exp(self.tau)))
         return(res)
 
-    def fitTo(self,simmod,dho,r,num,verbose = False, grad = True, par = None):
+    def fitTo(self,simmod,dho,r,num,verbose = False, fgrad = True, par = None):
+        if simmod == 1:
+            tmp = np.load("./simmodels/SI.npz")
+            self.truth = np.hstack([tmp['kappa'],tmp['gamma'],np.log(1/np.exp(tmp['sigma'])**2)])
         if par is None:
-            par = np.array([-1,0.5,2])
-        mods = np.array(['SI','SA','NA1','NA2'])
+            par = np.load('./simmodels/initSI.npy')
+        mods = np.array(['SI','SA','NI','NA'])
         dhos = np.array(['100','10000','27000'])
         rs = np.array([1,10,100])
         tmp = np.load('./simulations/' + mods[simmod-1] + '-'+str(num)+".npz")
@@ -118,13 +124,13 @@ class StatIso:
         self.S[np.sort(tmp['locs'+dhos[dho-1]]*1)] = 1
         self.S = sparse.diags(self.S)
         self.S =  delete_rows_csr(self.S.tocsr(),np.where(self.S.diagonal() == 0))
-        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, grad = grad,par = par)
-        np.savez(file = './fits/' + mods[simmod-1] + '-SI-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res['x'])
+        res = self.fit(data = self.data, r=self.r, S = self.S,verbose = verbose, fgrad = fgrad,par = par)
+        np.savez(file = './fits/' + mods[simmod-1] + '-SI-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz', par = res)
         return(True)
 
-    def loadFit(self, simmod, dho, r, num, file = None):
+    def loadFit(self, simmod=None, dho=None, r=None, num=None, file = None):
         if file is None:
-            mods = np.array(['SI','SA','NA1','NA2'])
+            mods = np.array(['SI','SA','NI','NA'])
             dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
             file = './fits/' + mods[simmod-1] + '-SI-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
@@ -140,22 +146,17 @@ class StatIso:
         Dk =  sparse.diags([np.exp(par[0])]*self.n) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
+        self.Q_fac = self.cholesky(self.Q)
         self.mvar = rqinv(self.Q).diagonal()
 
-    def sample(self,n = 1, par = None):
-        if par is None:
-            assert(self.kappa is not None and self.gamma is not None and self.sigma is not None)
-        if self.Q is None or self.Q_fac is None:
-            self.setQ(par = par)
-        data = np.zeros((self.n,n))
-        for i in range(n):
-            z = np.random.normal(size = self.n)
-            data[:,i] = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n)*np.exp(self.sigma)
+    def sample(self,n = 1):
+        z = np.random.normal(size = self.n*n).reshape(self.n,n)
+        data = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n*n).reshape(self.n,n)*np.exp(self.sigma)
         return(data)
 
     def sim(self):
-        self.load()
+        if not self.loaded:
+            self.load()
         mods = []
         for file in os.listdir("./simulations/"):
             if file.startswith("SI-"):
@@ -168,18 +169,22 @@ class StatIso:
         np.savez('./simulations/SI-'+ str(num) +'.npz', data = self.data, locs100 = np.random.choice(np.arange(self.n), 100, replace = False), locs10000 = np.random.choice(np.arange(self.n), 10000, replace = False), locs27000 = np.arange(self.n))
         return(True)
 
-    def setQ(self,par = None):
+    def setQ(self,par = None,S = None,simple = False):
         if par is None:
             assert(self.kappa is not None and self.gamma is not None and self.sigma is not None)
         else:
             self.kappa = par[0]
             self.gamma = par[1]
             self.sigma = par[2]
+        if S is not None:
+            self.S = S
         Hs = np.exp(self.gamma)*np.eye(3) + np.zeros((self.n,6,3,3))
         Dk =  sparse.diags([np.exp(self.kappa)]*self.n) 
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
-        self.Q_fac = cholesky(self.Q)
+        self.Q_fac = self.cholesky(self.Q)
+        if not simple:
+            self.Q_fac = self.cholesky(self.Q)
 
 
     def cholesky(self,Q):
@@ -190,7 +195,25 @@ class StatIso:
             return(-1)
         else:
             return(Q_fac)
-        
+
+    def simpleMvar(self,Q_fac,Q, Qc_fac = None,n = 100):
+        z = np.random.normal(size = self.n*n).reshape(self.n,n)
+        Q = Q.tocoo()
+        r = Q.row
+        c = Q.col
+        d = Q.data
+        tmp = Q_fac.apply_Pt(Q_fac.solve_Lt(z,use_LDLt_decomposition=False))
+        mt = tmp.mean(axis=1)
+        res = ((tmp[r,:] - mt[r,np.newaxis])*(tmp[c,:]-mt[c,np.newaxis])).mean(axis=1)
+        tot=sparse.csc_matrix((res, (r, c)), shape=(self.n,self.n))
+        if Qc_fac is not None:
+            tmp2 = Qc_fac.apply_Pt(Qc_fac.solve_Lt(z,use_LDLt_decomposition=False))
+            mt2 = tmp2.mean(axis=1)
+            res2 = ((tmp2[r,:] - mt2[r,np.newaxis])*(tmp2[c,:]-mt2[c,np.newaxis])).mean(axis=1)
+            tot2=sparse.csc_matrix((res2, (r, c)), shape=(self.n,self.n))
+            return((tot,tot2))
+        else:
+            return(tot)
 
     def logLike(self, par):
         data  = self.data
@@ -211,38 +234,37 @@ class StatIso:
             data = data.reshape(data.shape[0],1)
             mu_c = mu_c.reshape(mu_c.shape[0],1)
         if self.grad:
-            Qinv = rqinv(Q)
-            Qcinv = rqinv(Q_c)
+            if np.abs(self.likediff) < 0.0001:
+                Qinv =  rqinv(Q) 
+                Qcinv = rqinv(Q_c)
+            else:
+                Qinv,Qcinv = self.simpleMvar(Q_fac,Q,Q_c_fac)
 
-            A_kappa = Dk@self.Dv
-            A_gamma = - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[2]/2 - 1/2*Q_c_fac.logdet()*self.r - 1/2*(mu_c.transpose()@Q@mu_c).diagonal().sum() - np.exp(par[2])/2*((data - self.S@mu_c).transpose()@(data-self.S@mu_c)).diagonal().sum()
+            g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[2])).diagonal().sum()*self.r - 1/2*((data - self.S@mu_c).transpose()@(data - self.S@mu_c)).diagonal().sum()*np.exp(par[2])
 
-            Q_kappa = A_kappa.transpose()@self.iDv@A_mat + A_mat.transpose()@self.iDv@A_kappa
-            Q_gamma = A_gamma.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_gamma
-
-            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[2]/2 - 1/2*Q_c_fac.logdet()*self.r
-            g_kappa = 1/2*((Qinv - Qcinv)@Q_kappa).diagonal().sum()*self.r
-            g_gamma = 1/2*((Qinv - Qcinv)@Q_gamma).diagonal().sum()*self.r
-            g_noise = self.S.shape[0]*self.r/2 - 1/2*(Qcinv@self.S.transpose()@self.S*np.exp(par[2])).diagonal().sum()*self.r
-
-            for j in range(self.r): # Maybe make a better version than this for loop possibly need to account for dimension 0
-                g_kappa = g_kappa + (- 1/2*mu_c[:,j].transpose()@Q_kappa@mu_c[:,j])
-                g_gamma = g_gamma + (- 1/2*mu_c[:,j].transpose()@Q_gamma@mu_c[:,j])
-                g_noise = g_noise + (- 1/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j] - self.S@mu_c[:,j])*np.exp(par[2]))
-                like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[2])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
+            A_par = Dk@self.Dv
+            Q_par = A_par.transpose()@self.iDv@A_mat + A_mat.transpose()@self.iDv@A_par
+            g_kappa = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r - 1/2*((mu_c.transpose()@Q_par)@mu_c).diagonal().sum()
+            
+            A_par = - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
+            Q_par = A_par.transpose()@self.iDv@A_mat +  A_mat.transpose()@self.iDv@A_par
+            g_gamma = 1/2*((Qinv - Qcinv)@Q_par).diagonal().sum()*self.r - 1/2*((mu_c.transpose()@Q_par)@mu_c).diagonal().sum()
+            
             like = -like/(self.S.shape[0]*self.r)
             jac = - np.array([g_kappa,g_gamma,g_noise])/(self.S.shape[0]*self.r)
-            #jac = jac/np.linalg.norm(jac)
-            self.opt_steps = self.opt_steps + 1
+            self.likediff = like - self.like
             self.like = like
+            self.opt_steps = self.opt_steps + 1
             self.jac = jac
             if self.verbose:
-                print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
+                if self.truth is not None:
+                    print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%(par[0]-self.truth[0]), "\u03B3 = %2.2f"%(par[1]-self.truth[1]),"\u03C3 = %2.2f"%(par[2]-self.truth[2]))
+                else:
+                    print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%np.exp(par[0]), "\u03B3 = %2.2f"%np.exp(par[1]), "\u03C3 = %2.2f"%np.sqrt(1/np.exp(par[2])))
             return((like,jac))
         else: 
-            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[2]/2 - 1/2*Q_c_fac.logdet()*self.r
-            for j in range(self.r):
-                like = like + (- 1/2*mu_c[:,j].transpose()@Q@mu_c[:,j] - np.exp(par[2])/2*(data[:,j] - self.S@mu_c[:,j]).transpose()@(data[:,j]-self.S@mu_c[:,j]))
+            like = 1/2*Q_fac.logdet()*self.r + self.S.shape[0]*self.r*par[2]/2 - 1/2*Q_c_fac.logdet()*self.r - 1/2*(mu_c.transpose()@Q@mu_c).diagonal().sum() - np.exp(par[2])/2*((data - self.S@mu_c).transpose()@(data-self.S@mu_c)).diagonal().sum()
             like = -like/(self.S.shape[0]*self.r)
             self.like = like
             self.opt_steps = self.opt_steps + 1
