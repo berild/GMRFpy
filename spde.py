@@ -69,13 +69,13 @@ class spde:
             from StatIso import StatIso
             self.mod = StatIso(grid = self.grid, par=par)
         elif (self.model==2):
-            from StatAnIsoN import StatAnIso
+            from StatAnIso import StatAnIso
             self.mod = StatAnIso(grid = self.grid, par=par)
         elif (self.model==3):
             from NonStatIso import NonStatIso
             self.mod = NonStatIso(grid = self.grid, par=par)
         elif (self.model==4):
-            from NonStatAnIsoN import NonStatAnIso
+            from NonStatAnIso import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid,par=par)
         else:
             print("Not a implemented model (1-4)...")
