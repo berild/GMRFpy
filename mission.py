@@ -13,6 +13,7 @@ import plotly.graph_objs as go
 from plotly.offline import plot
 from plotly.subplots import make_subplots
 import plotly.io as pio
+from os.path import exists
 
 
 def delete_rows_csr(mat, indices):
@@ -25,6 +26,21 @@ def delete_rows_csr(mat, indices):
     mask = np.ones(mat.shape[0], dtype=bool)
     mask[indices] = False
     return mat[mask]
+
+def matchTimestamps(timestamps,time):
+    tint =  np.zeros(2)
+    ex = False
+    tint[1] = len(timestamps)-1
+    for i in range(len(timestamps)):
+        if timestamps[i] == time[0]:
+            tint[0] = i
+            ex = True
+        if timestamps[i]==time[1]:
+            tint[1] = i        
+    if ex:
+        return(tint.astype('int32'))
+    else:
+        return(None)
 
 class mission:
     def __init__(self,file):
@@ -230,9 +246,147 @@ class mission:
         ax.axhline(c = 'k')
         plt.savefig('./mission/'+ self.file + '/figures/SINMOD_err.png', dpi=300)
 
-    def emulator(self,save=False, pars = False, model = 4, new = False):
-        nc = netCDF4.Dataset('./mission/' + self.file + '/SINMOD.nc')
+    def emulatorComp(self,save=False,pars = False, model = 4,new = False):
         tmp = np.load("./mission/" +self.file+"/mission.npz")
+        tints = tmp['tints']*1
+        tmpints = list()
+        for i in range(tints.shape[0]):    
+            tmpints.append(list([datetime.datetime(tints[i,0,0],tints[i,0,1],tints[i,0,2],tints[i,0,3],tints[i,0,4]),datetime.datetime(tints[i,1,0],tints[i,1,1],tints[i,1,2],tints[i,1,3],tints[i,1,4])]))
+        tints = tmpints
+        par = None
+        if pars:
+            if new:
+                par = np.load("./mission/" + self.file + "/model_" + str(model)+ "_new" + ".npz")['par']*1
+            else:    
+                par = np.load("./mission/" + self.file + "/model_" + str(model)+ ".npz")['par']*1
+        self.mod = spde(model = model, par=par)
+        xint = tmp['xdom']*1
+        yint = tmp['ydom']*1
+        zint = tmp['zdom']*1
+        xdom = np.arange(xint[0],xint[1],xint[2])
+        ydom = np.arange(yint[0],yint[1],yint[2])
+        zdom = np.arange(zint[0],zint[1],zint[2])
+        M = xdom.shape[0]
+        N = ydom.shape[0]
+        P = zdom.shape[0]
+        dSmall = None
+        mufSmall = None
+        hide = None
+        S = None
+        for j in range(len(tints)):
+            start_file = 'nidelva_%02d_%02d_%02d/SINMOD.nc'%(tints[j][0].day,tints[j][0].month,tints[j][0].year-2000)
+            nc1 = netCDF4.Dataset('./mission/'+start_file)
+            ttmp = start_file.split('_')[1:]
+            ttmp[2] = ttmp[2].split('/')[0]
+            ttmp = np.array(ttmp,'int32')
+            timestamps = [datetime.datetime(2000+ ttmp[2] ,ttmp[1],ttmp[0],0) + datetime.timedelta(minutes=x) for x in nc1['time'][:]*24*60]
+            if tints[j][0].day !=  tints[j][1].day:
+                end_file = 'nidelva_%02d_%02d_%02d/SINMOD.nc'%(tints[j][1].day,tints[j][1].month,tints[j][1].year-2000)
+                if exists(end_file) and (nc1['time'].shape[0] == 144):
+                    nc2 = netCDF4.Dataset('./data/'+end_file)
+                    ttmp = end_file.split('_')[1:]
+                    ttmp[2] = ttmp[2].split('/')[0]
+                    ttmp = np.array(ttmp,'int32')
+                    timestamps = timestamps +[datetime.datetime(2000+ ttmp[2] ,ttmp[1],ttmp[0],0) + datetime.timedelta(minutes=x) for x in nc2['time'][:]*24*60]
+                    tint = matchTimestamps(timestamps,tints[j])
+                    data = np.stack([np.array(nc1['salinity'][:]),np.array(nc2['salinity'][:])],axis = 0)
+                else:
+                    data =np.array(nc1['salinity'][:])
+                    tint = matchTimestamps(timestamps,tints[j])
+            else: 
+                data =np.array(nc1['salinity'][:])
+
+            tint = matchTimestamps(timestamps,tints[j])
+            if tint is None:
+                continue
+            tdom = np.arange(tint[0],tint[1]+1)
+            data = (data[tint[0]:tint[1]+1,zint[0]:zint[1]:zint[2],yint[0]:yint[1]:yint[2],xint[0]:xint[1]:xint[2]]).swapaxes(0,3).swapaxes(1,2).swapaxes(0,1).reshape(zdom.shape[0]*xdom.shape[0]*ydom.shape[0],tdom.shape[0])
+            if hide is None:
+                hide = (np.all((data - data[:,0][:,np.newaxis]) == 0,axis = 1)==False)*1
+            if S is None:
+                S = sparse.diags((np.all((data - data[:,0][:,np.newaxis]) == 0,axis = 1)==False)*1)
+                S = delete_rows_csr(S.tocsr(),np.where(S.diagonal() == 0))
+            elif not np.all(hide == (np.all((data - data[:,0][:,np.newaxis]) == 0,axis = 1)==False)*1):
+                mufSmall = S.transpose()@mufSmall
+                S = sparse.diags((((np.all((data - data[:,0][:,np.newaxis]) == 0,axis = 1)==False)*1+hide)==2)*1)
+                S = delete_rows_csr(S.tocsr(),np.where(S.diagonal() == 0))
+                dSmall = S.transpose()@S@dSmall
+                mufSmall = S@mufSmall
+            data = S.transpose()@S@data
+            if dSmall is None:
+                dSmall = data
+            else:
+                dSmall = np.hstack([dSmall,data])
+
+            data = S@data
+            mu = data.mean(axis = 1)
+            self.mu = mu
+            rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
+            if mufSmall is None:
+                mufSmall = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+            else: 
+                mufSmall = np.hstack([mufSmall,(data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)])
+        self.edata = dSmall
+        self.emulator_exists = True
+        self.S = S
+        self.muf = mufSmall
+
+        # Grid
+        x = np.array(nc1['xc'][xdom])
+        y = np.array(nc1['yc'][ydom])
+        z = np.array(nc1['zc'][zdom])
+        self.mod.setGrid(M,N,P,x,y,z)
+        self.mod.setQ(S = self.S)
+        self.lon = np.array(nc1['gridLons'][:,:])
+        self.lat = np.array(nc1['gridLats'][:,:])
+        self.glat = self.lat[yint[0]:yint[1],xint[0]:xint[1]].transpose().flatten()
+        self.glon = self.lon[yint[0]:yint[1],xint[0]:xint[1]].transpose().flatten()
+        zll = np.array(nc1['zc'][:])
+        self.slon = np.zeros(M*N*P)
+        self.slat = np.zeros(M*N*P)
+        self.szll = np.zeros(M*N*P)
+        t = 0
+        for j in ydom:
+            for i in xdom:
+                for k in zdom:
+                    self.slon[t] = self.lon[j,i]
+                    self.slat[t] = self.lat[j,i]
+                    self.szll[t] = zll[k]
+                    t = t + 1
+        self.emulator_exists = True
+        if save:
+            np.save('./mission/' + self.file + '/depth.npy', self.szll)
+            np.save('./mission/' + self.file + '/lats.npy', self.slat)
+            np.save('./mission/' + self.file + '/lons.npy', self.slon)
+            self.mean(version1 = tmp['mean']*1)
+            np.save('./mission/' + self.file + '/prior.npy', self.mu)
+            tmp = np.zeros((4,4))
+            tmp[:,0]=[x[0],x[x.shape[0]], x[x.shape[0]],x[0]]
+            tmp[:,1]=[y[0],y[0], y[t.shape[0]],y[y.shape[0]]]
+            tmp[:,2]=[self.slat[0],self.slat[(N-1)*M*P + 0*P + 0], self.slat[(0)*M*P + (M-1)*P + 0],self.slat[(N-1)*M*P + (M-1)*P + 0]]
+            tmp[:,3]=[self.slon[0],self.slon[(N-1)*M*P + 0*P + 0], self.slon[(0)*M*P + (M-1)*P + 0],self.slon[(N-1)*M*P + (M-1)*P + 0]]
+            np.save('./mission/' + self.file + '/grid.npy', tmp)
+            self.mod.mod.setQ()
+            Q = self.mod.mod.Q.tocoo()
+            r = Q.row
+            c = Q.col
+            v = Q.data
+            tmp = np.stack([r,c,v],axis=1)
+            np.save('./mission/' + self.file + '/Q.npy',tmp)
+
+
+    def emulator(self,save=False, pars = False, model = 4, new = False):
+        tmp = np.load("./mission/" +self.file+"/mission.npz")
+        try:
+            tmp['tints']
+        except:
+            var_exists = False
+        else:
+            var_exists = True
+        if var_exists:
+            self.emulatorComp(save=save,pars = pars, model = model, new=new)
+            return
+        nc = netCDF4.Dataset('./mission/' + self.file + '/SINMOD.nc')
         par = None
         if pars:
             if new:
@@ -290,7 +444,8 @@ class mission:
             np.save('./mission/' + self.file + '/depth.npy', self.szll)
             np.save('./mission/' + self.file + '/lats.npy', self.slat)
             np.save('./mission/' + self.file + '/lons.npy', self.slon)
-            #np.save('./mission/' + self.file + '/prior.npy', tm)
+            self.mean(version1 = tmp['mean']*1)
+            np.save('./mission/' + self.file + '/prior.npy', self.mu)
             tmp = np.zeros((4,4))
             tmp[:,0]=[x[0],x[x.shape[0]], x[x.shape[0]],x[0]]
             tmp[:,1]=[y[0],y[0], y[t.shape[0]],y[y.shape[0]]]
@@ -306,7 +461,7 @@ class mission:
             np.save('./mission/' + self.file + '/Q.npy',tmp)
 
     # have multiple types of mean (array)
-    def mean(self,version1 = 'm',version2 = "mf", idx = None):
+    def mean(self,version1 = None,version2 = None, idx = None):
         if version1 == 'm':
             self.mu = self.edata.mean(axis = 1)
         elif version1 == "t":
