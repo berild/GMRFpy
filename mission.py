@@ -382,7 +382,7 @@ class mission:
         self.edata = dSmall
         self.emulator_exists = True
         self.S = S
-        self.muf = mufSmall
+        self.muf = mufSmall + np.random.normal(0,np.sqrt(mufSmall.var(axis=1).max()*0.05),mufSmall.shape[0]*(mufSmall.shape[1])).reshape(mufSmall.shape[0],mufSmall.shape[1])
 
         # Grid
         x = np.array(nc1['xc'][xdom])

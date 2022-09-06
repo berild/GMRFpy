@@ -12,7 +12,7 @@ def main(argv):
     elif int(argv[1]) == 2:
         par = np.array([-1.1,-1.2,5.1,4.1,0.04,0.4,0.6,5])
     end = ['_new','_lag','_avr']
-    mis.fit(par= par, verbose = True)
+    mis.fit(par= par, verbose = True,end = end[int(argv[2])-1])
     print("finished")
 
 if __name__ == "__main__":
