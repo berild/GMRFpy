@@ -51,7 +51,7 @@ class mission:
         self.muf = None
         self.mu = None
 
-    def fit(self,par=None,verbose = False):
+    def fit(self,par=None,verbose = False, end = "_new"):
         assert self.emulator_exists, "No emulator defined"
         assert self.muf is not None, "No model mean defined"
         print("Starting model fit of model "+ str(self.mod.model))
@@ -65,7 +65,7 @@ class mission:
                  np.random.normal(0.5,0.5,27),3])
         self.mod.fit(data=self.muf, par = par,r=self.muf.shape[1],S=self.S,verbose= verbose)
         par = self.mod.getPars()
-        np.savez("./mission/" + self.file + '/model_' + str(self.mod.model)+ "_new" + '.npz', par = par)
+        np.savez("./mission/" + self.file + '/model_' + str(self.mod.model)+ end + '.npz', par = par)
 
     def init_auv(self):
         assert self.emulator_exists, "No emulator defined"
@@ -98,12 +98,12 @@ class mission:
         else:
             return(self.auv.mu)
 
-    def cross_validation(self,version = 1, fold = None, simple = False):
+    def cross_validation(self,version = 1, fold = None, simple = False,plot = False):
         assert self.auv_exists, "No AUV defined"
         if fold is None:
             if len(self.mdata['fold'].unique()) == 1:
-                # place in different folds here, random
-                pass
+                self.mdata['fold'] = np.random.randint(8,size = self.mdata.shape[0]) + 1
+                fold = np.arange(8)+1
             else:
                 fold = self.mdata['fold'].unique()
         if version == 1:
@@ -131,7 +131,7 @@ class mission:
             err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
         return(err_df)
 
-    def assimilate(self, idx = None, save = False, plot = False, processing = False, model = 4):
+    def assimilate(self, idx = None, save = False, plot = False, model = 4):
         if not self.emulator_exists:
             self.emulator(model = model)
         eta_hat_df = pd.read_csv("./mission/" + self.file + "/data/EstimatedState.csv")
@@ -154,18 +154,22 @@ class mission:
             idx = np.hstack(idx)
         else: 
             tidx = np.zeros(idx.shape) + 1
-        rlat = rlat[idx]*180/np.pi
-        rlon = rlon[idx]*180/np.pi
-        rsal = df[' value (psu)'].to_numpy()[idx]
         rz = df[' depth (m)'].to_numpy()[idx]
-        timestamp = df['timestamp'].to_numpy()[idx]
+        rm = rz > 0.25
+        rz = rz[rm]
+        rlat = (rlat[idx]*180/np.pi)[rm]
+        rlon = (rlon[idx]*180/np.pi)[rm]
+        rsal = df[' value (psu)'].to_numpy()[idx][rm]
+        rz = df[' depth (m)'].to_numpy()[idx][rm]
+        timestamp = df['timestamp'].to_numpy()[idx][rm]
         idxs = np.zeros(rsal.size)
         for i in range(rsal.size):
-            tmp = np.nanargmin(np.sqrt((rlat[i]-self.glat)**2 + (rlon[i]-self.glon)**2))
-            tmpx= np.floor(tmp/self.mod.grid.N).astype("int32")
-            tmpy= tmp - tmpx*self.mod.grid.N
-            tmpz= np.nanargmin((rz[i]-self.mod.grid.z)**2)
-            idxs[i] = tmpy*self.mod.grid.M*self.mod.grid.P  + tmpx*self.mod.grid.P + tmpz
+            if rz[i] > 0.25:
+                tmp = np.nanargmin(np.sqrt((rlat[i]-self.glat)**2 + (rlon[i]-self.glon)**2))
+                tmpx= np.floor(tmp/self.mod.grid.N).astype("int32")
+                tmpy= tmp - tmpx*self.mod.grid.N
+                tmpz= np.nanargmin((rz[i]-self.mod.grid.z)**2)
+                idxs[i] = tmpy*self.mod.grid.M*self.mod.grid.P  + tmpx*self.mod.grid.P + tmpz
         si = 0
         u_idx = list()
         u_data = list()
@@ -229,24 +233,55 @@ class mission:
         fig.tight_layout()
         plt.savefig('./mission/'+self.file+'/figures/folds.png', dpi=300)
 
-    def check_emulator(self,model=4):
+    def check_emulator(self,model=4,version = 1):
         assert self.emulator_exists, 'No emulator exists'
         assert self.assimilate_exists, 'No assimilation exists'
+        if version==2:
+            assert self.auv_exists, 'No AUV exists'
         time_emu = np.array([datetime.datetime.timestamp(x) for x in self.time])
         time_data = self.mdata['timestamp'].to_numpy()
         timeidx = np.zeros(time_data.shape)
         for i in range(time_data.shape[0]):
             timeidx[i] = np.nanargmin((time_emu-time_data[i])**2)
         timeidx = timeidx.astype('int32')
-        err = (self.edata[self.mdata['idx'],timeidx]-self.mdata['data']).to_numpy()
-        fig,ax = plt.subplots(figsize = (10,10))
-        im = ax.scatter(self.szll[self.mdata['idx']],err, c = self.edata[self.mdata['idx'],timeidx],cmap = plt.get_cmap('coolwarm'))
-        fig.colorbar(im, ax=ax)
-        ax.set_xticks(np.arange(0.5,10,step = 1),colors = 'black')
-        ax.axhline(c = 'k')
+        if version ==1:
+            err = (self.edata[self.mdata['idx'],timeidx]-self.mdata['data']).to_numpy()
+        elif version == 2:
+            err = (self.auv.mu[self.mdata['idx']]-self.mdata['data']).to_numpy()
+        fig,ax = plt.subplots(ncols = 2,figsize = (30,10))
+        if version == 1:
+            im1 = ax[0].scatter(self.szll[self.mdata['idx']],err, c = self.edata[self.mdata['idx'],timeidx],cmap = plt.get_cmap('coolwarm'))
+        elif version == 2:
+            im1 = ax[0].scatter(self.szll[self.mdata['idx']],err, c = self.auv.mu[self.mdata['idx']],cmap = plt.get_cmap('coolwarm'))
+        cbar1 = fig.colorbar(im1, ax=ax[0])
+        cbar1.set_label('SINMOD', rotation=270,fontsize = 20)
+        cbar1.ax.get_yaxis().labelpad = 15
+        ax[0].set_xticks(self.mod.grid.z,colors = 'black')
+        ax[0].set_xlabel('Depth', fontsize=20)
+        ax[0].set_ylabel('Bias (SINMOD - Measurment)', fontsize=20)
+        ax[0].axhline(c = 'k')
+        im = mpimg.imread('./mission/'+self.file+'/AOOsmall.png')
+        tmp = np.load('./mission/'+self.file+'/AOOdat.npy')
+        im_lon = np.linspace(tmp[:,1].min(),tmp[:,1].max(),im.shape[1])
+        im_lat = np.linspace(tmp[:,0].min(),tmp[:,0].max(),im.shape[0])
+        tmp = self.mdata
+        pos_lat = self.slat[tmp['idx']]
+        pos_lon = self.slon[tmp['idx']]
+        y = np.zeros(pos_lat.shape)
+        x = np.zeros(pos_lon.shape)
+        for k in range(pos_lat.size):
+            y[k] = np.nanargmin((pos_lat[k]-im_lat)**2)
+            x[k] = np.nanargmin((pos_lon[k]-im_lon)**2)
+        y = im_lat.shape[0] - y
+        ax[1].imshow(im)
+        im2 = ax[1].scatter(x,y,c = err,cmap = plt.get_cmap('coolwarm'))
+        ax[1].set_axis_off()
+        cbar2 = fig.colorbar(im2, ax=ax[1])
+        cbar2.ax.get_yaxis().labelpad = 15
+        cbar2.set_label('Bias (SINMOD - Measurment)', rotation=270,fontsize = 20)
         plt.savefig('./mission/'+ self.file + '/figures/SINMOD_err.png', dpi=300)
 
-    def emulatorComp(self,save=False,pars = False, model = 4,new = False):
+    def emulatorComp(self,save=False,pars = False, model = 4,new = False, mean = None):
         tmp = np.load("./mission/" +self.file+"/mission.npz")
         tints = tmp['tints']*1
         tmpints = list()
@@ -321,11 +356,29 @@ class mission:
             data = S@data
             mu = data.mean(axis = 1)
             self.mu = mu
-            rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
-            if mufSmall is None:
-                mufSmall = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
-            else: 
-                mufSmall = np.hstack([mufSmall,(data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)])
+            if mean == 1:
+                rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
+                if mufSmall is None:
+                    mufSmall = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) # + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+                else: 
+                    mufSmall = np.hstack([mufSmall,(data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])])# + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+            elif mean == 2:
+                lag = 6
+                tmean = np.zeros((data.shape[0],data.shape[1]-1))
+                for i in range(data.shape[1]-1):
+                    if (i < lag):
+                        tmean[:,i] = data[:,:(i+1)].mean(axis = 1)
+                    else:
+                        tmean[:,i] = data[:,(i-lag):(i+1)].mean(axis=1)
+                if mufSmall is None:
+                    mufSmall = data[:,1:] - tmean
+                else: 
+                    mufSmall = np.hstack([mufSmall,data[:,1:] - tmean])
+            elif mean == 3:
+                if mufSmall is None:
+                    mufSmall = data - np.array([mu]*data.shape[1]).transpose()
+                else:
+                    mufSmall = np.hstack([mufSmall, data - np.array([mu]*data.shape[1]).transpose()])
         self.edata = dSmall
         self.emulator_exists = True
         self.S = S
@@ -375,7 +428,7 @@ class mission:
             np.save('./mission/' + self.file + '/Q.npy',tmp)
 
 
-    def emulator(self,save=False, pars = False, model = 4, new = False):
+    def emulator(self,save=False, pars = False, model = 4, new = False, mean = None):
         tmp = np.load("./mission/" +self.file+"/mission.npz")
         try:
             tmp['tints']
@@ -384,7 +437,7 @@ class mission:
         else:
             var_exists = True
         if var_exists:
-            self.emulatorComp(save=save,pars = pars, model = model, new=new)
+            self.emulatorComp(save=save,pars = pars, model = model, new=new,mean = mean)
             return
         nc = netCDF4.Dataset('./mission/' + self.file + '/SINMOD.nc')
         par = None
@@ -479,7 +532,7 @@ class mission:
             rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
             self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
         elif version2 == "tf":
-            lag = 3
+            lag = 6
             data = self.S@self.edata
             tmean = np.zeros(data.shape)
             for i in range(data.shape[1]):
