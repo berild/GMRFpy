@@ -96,8 +96,9 @@ class StatAnIso:
         if not simple:
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
+            self.loaded = True
         
-    def fit(self,data, r, S,par = None,verbose = False, fgrad = True):
+    def fit(self,data, r, S,par = None,verbose = False, fgrad = True, end = None):
         if par is None:
             par = np.array([-1.5,-1.1,5,4.2,0.04,0.4,0.3,3])
         self.data = data
@@ -106,6 +107,7 @@ class StatAnIso:
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
+        self.end = end
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
@@ -376,6 +378,8 @@ class StatAnIso:
             self.like = like
             self.opt_steps = self.opt_steps + 1
             self.jac = jac
+            if self.end is not None:
+                np.savez(self.end + 'npz',par)
             if self.verbose:
                 if self.truth is not None:
                     print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%(par[0]-self.truth[0]), "\u03B3 = %2.2f"%(par[1]-self.truth[1]),"vx = %2.2f"%(np.abs(par[2])-np.abs(self.truth[2])),"vy = %2.2f"%(np.abs(par[3])-np.abs(self.truth[3])),

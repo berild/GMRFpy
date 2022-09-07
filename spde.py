@@ -111,14 +111,14 @@ class spde:
         return(success)
         
     # fix par for models
-    def fit(self,data,r, S, par = None,model = None,verbose = False, fgrad = True):
+    def fit(self,data,r, S, par = None,model = None,verbose = False, fgrad = True,end = None):
         if model is None:
             if self.mod is None:
                 print("No model defined...")
         else:
             self.model = model
             self.define(model = model)
-        res = self.mod.fit(data, r, S, par = par,verbose = verbose, fgrad=fgrad)
+        res = self.mod.fit(data, r, S, par = par,verbose = verbose, fgrad=fgrad,end = end)
         return(res)
 
     def sim(self,model=None,verbose=True):

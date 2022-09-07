@@ -63,7 +63,7 @@ class mission:
                  np.random.normal(0.2,0.2,27),
                  np.random.normal(0.5,0.5,27),
                  np.random.normal(0.5,0.5,27),3])
-        self.mod.fit(data=self.muf, par = par,r=self.muf.shape[1],S=self.S,verbose= verbose)
+        self.mod.fit(data=self.muf, par = par,r=self.muf.shape[1],S=self.S,verbose= verbose,end = end)
         par = self.mod.getPars()
         np.savez("./mission/" + self.file + '/model_' + str(self.mod.model)+ end + '.npz', par = par)
 

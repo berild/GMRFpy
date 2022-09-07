@@ -98,7 +98,7 @@ class NonStatAnIso:
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
 
-    def fit(self,data, r, S,verbose = False, fgrad = True, par = None):
+    def fit(self,data, r, S,verbose = False, fgrad = True, par = None,end = None):
         #mod4: kappa(0:27), gamma(27:54), vx(54:81), vy(81:108), vz(108:135), rho1(135:162), rho2(162:189), sigma(189)
         if par is None:
             par = np.array([-0.5]*190)
@@ -110,6 +110,7 @@ class NonStatAnIso:
         self.verbose = verbose
         self.likediff = 1000
         self.like = -10000
+        self.end = end
         if self.grad:
             print("Running...")
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
@@ -389,6 +390,8 @@ class NonStatAnIso:
             self.like = like
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
+            if self.end is not None:
+                np.savez(self.end + 'npz',par)
             if self.verbose:
                 if self.truth is not None:
                     print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%(np.mean(par[0:27]-self.truth[:27])), "\u03B3 = %2.2f"%(np.mean(par[27:54]-self.truth[27:54])),"vx = %2.2f"%(np.mean(np.abs(par[54:81])-np.abs(self.truth[54:81]))),"vy = %2.2f"%(np.mean(np.abs(par[81:108])-np.abs(self.truth[81:108]))),
