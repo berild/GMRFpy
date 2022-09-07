@@ -109,6 +109,8 @@ class auv:
         
         self.Q_fac = spde.mod.cholesky(self.Q)
         self.sigma = sigma
+        self.Q_k = self.Q.copy()
+        self.mu_k = self.mu
         
 
     def sample(self,n = 1):
@@ -118,8 +120,7 @@ class auv:
             n (int, optional): Number of realizations. Defaults to 1.
         """
         z = np.random.normal(size = self.n*n).reshape(self.n,n)
-        data = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) 
-        data = data[:self.n,:] + self.mu.reshape(-1,1) + np.random.normal(size = self.n*n).reshape(self.n,n)*self.sigma
+        data = self.mu[:,np.newaxis] + self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False))  + np.random.normal(size = self.n*n).reshape(self.n,n)*self.sigma
         return(data)
 
     def update(self, data, keep=False):
