@@ -391,7 +391,7 @@ class NonStatAnIso:
             jac =  -g_par/(self.S.shape[0]*self.r)
             self.opt_steps = self.opt_steps + 1
             if self.end is not None:
-                np.savez(self.end + 'npz',par)
+                np.savez(self.end + '.npz',par)
             if self.verbose:
                 if self.truth is not None:
                     print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%(np.mean(par[0:27]-self.truth[:27])), "\u03B3 = %2.2f"%(np.mean(par[27:54]-self.truth[27:54])),"vx = %2.2f"%(np.mean(np.abs(par[54:81])-np.abs(self.truth[54:81]))),"vy = %2.2f"%(np.mean(np.abs(par[81:108])-np.abs(self.truth[81:108]))),
