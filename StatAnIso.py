@@ -379,7 +379,7 @@ class StatAnIso:
             self.opt_steps = self.opt_steps + 1
             self.jac = jac
             if self.end is not None:
-                np.savez(self.end + 'npz',par)
+                np.savez(self.end + '.npz',par)
             if self.verbose:
                 if self.truth is not None:
                     print("# %4.0f"%self.opt_steps," log-likelihood = %4.4f"%(-like), "\u03BA = %2.2f"%(par[0]-self.truth[0]), "\u03B3 = %2.2f"%(par[1]-self.truth[1]),"vx = %2.2f"%(np.abs(par[2])-np.abs(self.truth[2])),"vy = %2.2f"%(np.abs(par[3])-np.abs(self.truth[3])),
