@@ -497,11 +497,11 @@ class mission:
             np.save('./mission/' + self.file + '/depth.npy', self.szll)
             np.save('./mission/' + self.file + '/lats.npy', self.slat)
             np.save('./mission/' + self.file + '/lons.npy', self.slon)
-            self.mean(version1 = tmp['mean']*1)
+            self.mean(version1 = 'm')
             np.save('./mission/' + self.file + '/prior.npy', self.mu)
             tmp = np.zeros((4,4))
-            tmp[:,0]=[x[0],x[x.shape[0]], x[x.shape[0]],x[0]]
-            tmp[:,1]=[y[0],y[0], y[t.shape[0]],y[y.shape[0]]]
+            tmp[:,0]=[x[0],x[x.shape[0]-1], x[x.shape[0]-1],x[0]]
+            tmp[:,1]=[y[0],y[0], y[y.shape[0]-1],y[y.shape[0]-1]]
             tmp[:,2]=[self.slat[0],self.slat[(N-1)*M*P + 0*P + 0], self.slat[(0)*M*P + (M-1)*P + 0],self.slat[(N-1)*M*P + (M-1)*P + 0]]
             tmp[:,3]=[self.slon[0],self.slon[(N-1)*M*P + 0*P + 0], self.slon[(0)*M*P + (M-1)*P + 0],self.slon[(N-1)*M*P + (M-1)*P + 0]]
             np.save('./mission/' + self.file + '/grid.npy', tmp)
