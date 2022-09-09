@@ -90,7 +90,7 @@ def main(argv):
                 res[0][54:189,(i)*3 + j] = np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]).mean(axis=0)- np.abs(truth[54:189])
                 res[1][54:189,(i)*3 + j] = np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0)
                 res[0][189,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189].mean(axis=0) - truth[189]
-                res[1][189,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189] - truth[189][np.newaxis,:])**2,axis = 0)
+                res[1][189,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189] - truth[189])**2,axis = 0)
             elif model == 2:
                 res[0][:2,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2].mean(axis=0) - truth[:2]
                 res[1][:2,(i)*3 + j] = np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2] - truth[:2][np.newaxis,:])**2,axis = 0)
