@@ -148,7 +148,7 @@ class auv:
         self.mu = self.mu_k
         self.Q_fac.cholesky_inplace(self.Q_k)
 
-    def mvar(self, simple = False, n = DEFAULT_NUM_SAMPLES):
+    def var(self, simple = False, n = DEFAULT_NUM_SAMPLES):
         if not simple:
             tshape = self.Q.shape
             Q = self.Q.copy().tocoo()

@@ -111,7 +111,7 @@ class mission:
             for i in range(len(fold)):
                 self.update(fold = np.delete(fold,i))
                 tmp = self.predict(fold = fold[i])
-                sigma = np.sqrt(self.auv.mvar(simple = simple))
+                sigma = np.sqrt(self.auv.var(simple = simple) + self.auv.sigma**2)
                 err[i,0] = self.RMSE(tmp,self.mdata['data'][self.mdata['fold']==fold[i]])
                 err[i,1] = self.CRPS(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
                 err[i,2] = self.logScore(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
@@ -123,7 +123,7 @@ class mission:
                 self.update(fold = fold[i])
                 tmpidx = np.array([x in np.delete(fold,i) for x in self.mdata['fold']])
                 tmp = self.predict(idx = tmpidx)
-                sigma = np.sqrt(self.auv.mvar(simple = simple))
+                sigma = np.sqrt(self.auv.var(simple = simple))
                 err[i,0] = self.RMSE(tmp,self.mdata['data'][tmpidx])
                 err[i,1] = self.CRPS(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
                 err[i,2] = self.logScore(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
