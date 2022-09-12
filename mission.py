@@ -111,7 +111,7 @@ class mission:
             for i in range(len(fold)):
                 self.update(fold = np.delete(fold,i))
                 tmp = self.predict(fold = fold[i])
-                sigma = np.sqrt(self.auv.var(simple = simple) + self.auv.sigma**2)
+                sigma = np.sqrt(self.auv.var(simple = simple))
                 err[i,0] = self.RMSE(tmp,self.mdata['data'][self.mdata['fold']==fold[i]])
                 err[i,1] = self.CRPS(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
                 err[i,2] = self.logScore(tmp,self.mdata['data'][self.mdata['fold']==fold[i]],sigma[self.mdata['idx'][self.mdata['fold']==fold[i]]])
