@@ -97,7 +97,7 @@ def main(argv):
                 res[0][2:7,(i)*3 + j] = np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]).mean(axis=0)- np.abs(truth[2:7])
                 res[1][2:7,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]) - np.abs(truth[2:7])[np.newaxis,:])**2,axis = 0))
                 res[0][7:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7:].mean(axis=0) - truth[7:]
-                res[1][7:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7:] - truth[7:])**2,axis = 0))
+                res[1][7:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7] - truth[7])**2))
             else: 
                 res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:].mean(axis=0) - truth
                 res[1][:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:] - truth)**2,axis = 0))
