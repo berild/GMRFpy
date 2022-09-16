@@ -21,10 +21,14 @@ def fitPar(model,data,start):
 
 
 def findFits(model, data, start):
-    if model != data:
-        vers = np.array([[i,j,k] for i in range(start,start+ 30) for j in range(1,3) for k in range(1,3)])
+    if (start + 30)>100:
+        end = 100
     else:
-        vers = np.array([[i,j,k] for i in range(start,start+ 30) for j in range(1,4) for k in range(1,4)])
+        end = start+ 30
+    if model != data:
+        vers = np.array([[i,j,k] for i in range(start,end) for j in range(1,3) for k in range(1,3)])
+    else:
+        vers = np.array([[i,j,k] for i in range(start,end) for j in range(1,4) for k in range(1,4)])
     modstr = np.array(["SI", "SA", "NI","NA"])
     dho = np.array(["100","10000","27000"])
     r = np.array(["1","10","100"])
