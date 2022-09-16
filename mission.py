@@ -14,6 +14,9 @@ from plotly.offline import plot
 from plotly.subplots import make_subplots
 import plotly.io as pio
 from os.path import exists
+from tqdm import tqdm
+import sys
+import cv2
 
 
 def delete_rows_csr(mat, indices):
@@ -74,17 +77,23 @@ class mission:
         self.auv = auv(self.mod,self.mu,self.mdata['sd'].mean())
         self.auv_exists = True
 
-    def update(self, idx=None, fold=None, plot = False,keep = False):
+    def update(self, idx=None, fold=None, plot = False,keep = False, txt = None):
         assert self.auv_exists, "No AUV defined"
         if idx is not None:
-            self.auv.update(self.mdata['data'][idx],self.mdata['idx'][idx])
+            data = self.mdata.iloc[idx]
+            self.auv.update(data = data,keep = keep)
         elif fold is not None:
             if hasattr(fold, "__len__"):
-                self.auv.update(self.mdata[np.array([x in fold for x in self.mdata['fold']])],keep = keep)
+                data = self.mdata[np.array([x in fold for x in self.mdata['fold']])]
+                self.auv.update(data = data,keep = keep)
             else:
-                self.auv.update(self.mdata[self.mdata['fold']==fold],keep = keep)
+                data= self.mdata[self.mdata['fold']==fold]
+                self.auv.update(data = data,keep = keep)
         else:
             print("No index for update defined")
+            return()
+        if plot:
+            self.plot_update(value = self.S.transpose()@self.S@self.auv.mu, idx = data['idx'].to_numpy(),txt = txt)
 
     def predict(self,idx = None, fold = None):
         assert self.auv_exists, "No AUV defined"
@@ -109,7 +118,7 @@ class mission:
         if version == 1:
             err = np.zeros((len(fold),3))
             for i in range(len(fold)):
-                self.update(fold = np.delete(fold,i))
+                self.update(fold = np.delete(fold,i),plot = plot, txt = 'update_version'+str(version)+'_model'+str(self.mod.model)+'_fold'+str(fold[i]))
                 tmp = self.predict(fold = fold[i])
                 sigma = np.sqrt(self.auv.var(simple = simple))
                 err[i,0] = self.RMSE(tmp,self.mdata['data'][self.mdata['fold']==fold[i]])
@@ -120,7 +129,7 @@ class mission:
         elif version ==2:
             err = np.zeros((len(fold),3))
             for i in range(len(fold)):
-                self.update(fold = fold[i])
+                self.update(fold = fold[i],plot = plot, txt = 'update_version'+str(version)+'_model'+str(self.mod.model)+'_fold'+str(fold[i]))
                 tmpidx = np.array([x in np.delete(fold,i) for x in self.mdata['fold']])
                 tmp = self.predict(idx = tmpidx)
                 sigma = np.sqrt(self.auv.var(simple = simple))
@@ -130,6 +139,8 @@ class mission:
                 self.auv.loadKeep()
             err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
         return(err_df)
+    
+
 
     def assimilate(self, idx = None, save = False, plot = False, model = 4):
         if not self.emulator_exists:
@@ -553,7 +564,7 @@ class mission:
     def RMSE(self,pred,truth):
         return(np.sqrt(np.mean((pred-truth)**2)))
 
-    def plot(self,value = None, version = 1, filename = None):
+    def plot(self,value = None, version = 1, filename = None,pos = None):
         pio.orca.shutdown_server()
         M = self.mod.grid.M
         N = self.mod.grid.N
@@ -590,8 +601,11 @@ class mission:
                 (0.60, "rgb(245, 117, 117)"),  (0.80, "rgb(245, 117, 117)"),
                 (0.80, "rgb(245, 67, 67)"),  (1.00, "rgb(245, 67, 67)")]
             if value is None:
-                value = self.mod.Corr(pos = [22,2,0])
-            cmin = 0
+                if pos is not None:
+                    value = self.mod.Corr(pos = pos) 
+                else:
+                    value = self.mod.Corr(pos = [22,2,0])
+            cmin = value.min()
             cmax = value.max()
             if filename is None:
                 filename = "mcorr"
@@ -599,19 +613,22 @@ class mission:
         yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
         xdif = self.mod.grid.A/4
         ydif = self.mod.grid.B/4
-        fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,0].flatten(), x=sx.reshape(M,N,P)[:,:,0].flatten(), y=sy.reshape(M,N,P)[:,:,0].flatten(),value=value.reshape(M,N,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
-        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,1].flatten(), x=sx.reshape(M,N,P)[:,:,1].flatten()+xdif*1, y=sy.reshape(M,N,P)[:,:,1].flatten()-ydif*1,value=value.reshape(M,N,P)[:,:,1].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
-        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,2].flatten(), x=sx.reshape(M,N,P)[:,:,2].flatten()+xdif*2, y=sy.reshape(M,N,P)[:,:,2].flatten()-ydif*2,value=value.reshape(M,N,P)[:,:,2].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
-        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,3].flatten(), x=sx.reshape(M,N,P)[:,:,3].flatten()+xdif*3, y=sy.reshape(M,N,P)[:,:,3].flatten()-ydif*3,value=value.reshape(M,N,P)[:,:,3].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
-        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,4].flatten(), x=sx.reshape(M,N,P)[:,:,4].flatten()+xdif*4, y=sy.reshape(M,N,P)[:,:,4].flatten()-ydif*4,value=value.reshape(M,N,P)[:,:,4].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
-        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(M,N,P)[:,:,5].flatten(), x=sx.reshape(M,N,P)[:,:,5].flatten()+xdif*5, y=sy.reshape(M,N,P)[:,:,5].flatten()-ydif*5,value=value.reshape(M,N,P)[:,:,5].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,1].flatten(), x=sx.reshape(N,M,P)[:,:,1].flatten()+xdif*1, y=sy.reshape(N,M,P)[:,:,1].flatten()-ydif*1,value=value.reshape(N,M,P)[:,:,1].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,2].flatten(), x=sx.reshape(N,M,P)[:,:,2].flatten()+xdif*2, y=sy.reshape(N,M,P)[:,:,2].flatten()-ydif*2,value=value.reshape(N,M,P)[:,:,2].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,3].flatten(), x=sx.reshape(N,M,P)[:,:,3].flatten()+xdif*3, y=sy.reshape(N,M,P)[:,:,3].flatten()-ydif*3,value=value.reshape(N,M,P)[:,:,3].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,4].flatten(), x=sx.reshape(N,M,P)[:,:,4].flatten()+xdif*4, y=sy.reshape(N,M,P)[:,:,4].flatten()-ydif*4,value=value.reshape(N,M,P)[:,:,4].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,5].flatten(), x=sx.reshape(N,M,P)[:,:,5].flatten()+xdif*5, y=sy.reshape(N,M,P)[:,:,5].flatten()-ydif*5,value=value.reshape(N,M,P)[:,:,5].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+
+        if pos is not None:
+            fig.add_trace(go.Scatter3d(mode = "markers", x=[sx[pos[1]*45*10 + pos[0]*10 + pos[2]]+xdif*pos[2]], y = [sy[pos[1]*45*10 + pos[0]*10 + pos[2]]-ydif*pos[2]], z=[-sz[pos[1]*45*10 + pos[0]*10 + pos[2]]], marker_symbol = "x", marker_color="midnightblue",marker_size=7,showlegend = False))
 
         fig.add_trace(go.Scatter3d(x=[0,0,xdif,xdif*2,xdif*3,xdif*4,xdif*5]+sx[0], y=[0,0,-ydif,-ydif*2,-ydif*3,-ydif*4,-ydif*5]+sy[0], z=[0,-0.5,-1.5,-2.5,-3.5,-4.5,-5.5], mode='text',text = ["Depth:","0.5","1.5","2.5","3.5","4.5","5.5"],textfont=dict(family="sans serif",size=25,color="black"),showlegend=False))
-        for i in range(6):
-            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*45*10 + 0*10 + 0, 0*45*10 + 44*10 + 0]]+xdif*i, y=[0,0]+sy[[0*45*10 + 0*10 + 0, 0*45*10 + 44*10 + 0]]-ydif*i, z=np.array([-0.5,-0.5])-i, mode='lines',line = dict(color='black'),showlegend=False))
-            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*45*10 + 0*10 + 0, 44*45*10 + 0*10 + 0]]+xdif*i, y=[0,0]+sy[[0*45*10 + 0*10 + 0, 44*45*10 + 0*10 + 0]]-ydif*i, z=np.array([-0.5,-0.5])-i, mode='lines',line = dict(color='black'),showlegend=False))
-            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[44*45*10 + 0*10 + 0, 44*45*10 + 44*10 + 0]]+xdif*i, y=[0,0]+sy[[44*45*10 + 0*10 + 0, 44*45*10 + 44*10 + 0]]-ydif*i, z=np.array([-0.5,-0.5])-i, mode='lines',line = dict(color='black'),showlegend=False))
-            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*45*10 + 44*10 + 0, 44*45*10 + 44*10 + 0]]+xdif*i, y=[0,0]+sy[[0*45*10 + 44*10 + 0, 44*45*10 + 44*10 + 0]]-ydif*i, z=np.array([-0.5,-0.5])-i, mode='lines',line = dict(color='black'),showlegend=False))
+        for j in range(6):
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
 
 
         fig.add_trace(go.Scatter3d(x=xarrow, 
@@ -637,3 +654,152 @@ class mission:
                         width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
         fig.write_html("test.html", auto_open = True)
         #fig.write_image("./mission/" + self.file + "/figures/" + filename + ".png",engine="orca",scale=1)
+
+
+    def plot_update(self,value, idx=None, txt=None):
+        pio.orca.shutdown_server()
+        M = self.mod.grid.M
+        N = self.mod.grid.N
+        P = self.mod.grid.P
+        sx = self.mod.grid.sx
+        sy = self.mod.grid.sy
+        sz = self.mod.grid.sz
+        cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
+            (0.50, "rgb(192, 245, 240)"), (0.60, "rgb(192, 245, 240)"),
+            (0.60, "rgb(241, 241, 225)"),  (0.70, "rgb(241, 241, 225)"),
+            (0.70, "rgb(255, 188, 188)"),  (0.80, "rgb(255, 188, 188)"),
+            (0.80, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
+        
+        cmin = (self.S@value).min()
+        cmax = (self.S@value).max()
+        xarrow = np.array([sx.max()-175,sx.max()-50,sx.max()-50,sx.max()-50,sx.max()-125])
+        yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
+        xdif = self.mod.grid.A/4
+        ydif = self.mod.grid.B/4
+        fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,1].flatten(), x=sx.reshape(N,M,P)[:,:,1].flatten()+xdif*1, y=sy.reshape(N,M,P)[:,:,1].flatten()-ydif*1,value=value.reshape(N,M,P)[:,:,1].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,2].flatten(), x=sx.reshape(N,M,P)[:,:,2].flatten()+xdif*2, y=sy.reshape(N,M,P)[:,:,2].flatten()-ydif*2,value=value.reshape(N,M,P)[:,:,2].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,3].flatten(), x=sx.reshape(N,M,P)[:,:,3].flatten()+xdif*3, y=sy.reshape(N,M,P)[:,:,3].flatten()-ydif*3,value=value.reshape(N,M,P)[:,:,3].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,4].flatten(), x=sx.reshape(N,M,P)[:,:,4].flatten()+xdif*4, y=sy.reshape(N,M,P)[:,:,4].flatten()-ydif*4,value=value.reshape(N,M,P)[:,:,4].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,5].flatten(), x=sx.reshape(N,M,P)[:,:,5].flatten()+xdif*5, y=sy.reshape(N,M,P)[:,:,5].flatten()-ydif*5,value=value.reshape(N,M,P)[:,:,5].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+        if idx is not None:
+            tmp = [0.5,1.5,2.5,3.5,4.5,5.5]
+            rem = sz[idx] <= 5.5
+            idx2 = idx[rem]
+            tz = np.zeros(idx2.shape)
+            for i in range(len(tmp)):
+                tz += (tmp[i]==sz[idx2])*i
+            fig.add_trace(go.Scatter3d(mode = "markers", x=sx[idx2]+xdif*tz, y = sy[idx2]-ydif*tz, z=-sz[idx2], marker_color="midnightblue",marker_size=4,showlegend = False))
+
+        fig.add_trace(go.Scatter3d(x=[0,0,xdif,xdif*2,xdif*3,xdif*4,xdif*5]+sx[0], y=[0,0,-ydif,-ydif*2,-ydif*3,-ydif*4,-ydif*5]+sy[0], z=[0,-0.5,-1.5,-2.5,-3.5,-4.5,-5.5], mode='text',text = ["Depth:","0.5","1.5","2.5","3.5","4.5","5.5"],textfont=dict(family="sans serif",size=25,color="black"),showlegend=False))
+        for j in range(6):
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+            fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+
+
+        fig.add_trace(go.Scatter3d(x=xarrow, 
+                                        y=yarrow,
+                                        z=np.array([0,0,0,0,0])-0.5,
+                                        line=dict(color='black',width=12),
+                                        mode='lines+text',
+                                        text=["","", "N","",""],
+                                        showlegend=False,
+                                        textfont=dict(
+                                            family="sans serif",
+                                            size=25,
+                                            color="LightSeaGreen")))
+
+        camera = dict(
+                    eye=dict(x=1.2, 
+                            y=-1.2, 
+                            z=1.3),
+                    center=dict(x=0.2, y=-0.2, z=0.18))
+        fig.update_scenes(xaxis_visible=False, 
+                            yaxis_visible=False,zaxis_visible=False,camera = camera)
+        fig.update_layout(autosize=False,
+                        width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+        if txt is None:
+            fig.write_html("test.html", auto_open = True)
+        else:
+            fig.write_image("./mission/" + self.file + "/figures/" + txt + ".png",engine="orca",scale=1)        
+
+
+    def mission_video(self,start = 0):
+        M = self.mod.grid.M
+        N = self.mod.grid.N
+        P = self.mod.grid.P
+        sx = self.mod.grid.sx
+        sy = self.mod.grid.sy
+        sz = self.mod.grid.sz
+        cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
+            (0.50, "rgb(192, 245, 240)"), (0.60, "rgb(192, 245, 240)"),
+            (0.60, "rgb(241, 241, 225)"),  (0.70, "rgb(241, 241, 225)"),
+            (0.70, "rgb(255, 188, 188)"),  (0.80, "rgb(255, 188, 188)"),
+            (0.80, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
+        
+        cmin = self.auv.mu.min()
+        cmax = self.auv.mu.max()
+        xarrow = np.array([sx.max()-175,sx.max()-50,sx.max()-50,sx.max()-50,sx.max()-125])
+        yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
+        xdif = self.mod.grid.A/4
+        ydif = self.mod.grid.B/4
+        value = self.auv.mu
+        tz = np.zeros(self.mdata.shape[0]-1)
+        for i in tqdm(range(self.mdata.shape[0])):
+            pio.orca.shutdown_server()
+            fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
+            fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,1].flatten(), x=sx.reshape(N,M,P)[:,:,1].flatten()+xdif*1, y=sy.reshape(N,M,P)[:,:,1].flatten()-ydif*1,value=value.reshape(N,M,P)[:,:,1].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+            fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,2].flatten(), x=sx.reshape(N,M,P)[:,:,2].flatten()+xdif*2, y=sy.reshape(N,M,P)[:,:,2].flatten()-ydif*2,value=value.reshape(N,M,P)[:,:,2].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+            fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,3].flatten(), x=sx.reshape(N,M,P)[:,:,3].flatten()+xdif*3, y=sy.reshape(N,M,P)[:,:,3].flatten()-ydif*3,value=value.reshape(N,M,P)[:,:,3].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+            fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,4].flatten(), x=sx.reshape(N,M,P)[:,:,4].flatten()+xdif*4, y=sy.reshape(N,M,P)[:,:,4].flatten()-ydif*4,value=value.reshape(N,M,P)[:,:,4].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+            fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,5].flatten(), x=sx.reshape(N,M,P)[:,:,5].flatten()+xdif*5, y=sy.reshape(N,M,P)[:,:,5].flatten()-ydif*5,value=value.reshape(N,M,P)[:,:,5].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
+            if i != 0:
+                idx = np.array(self.mdata.iloc[:i]['idx'])
+                tz[i-1] = np.where(sz[idx[i-1]] == [0.5,1.5,2.5,3.5,4.5,5.5])[0][0]
+                fig.add_trace(go.Scatter3d(mode = "markers", x=[sx[idx[i-1]]+xdif*tz[i-1]], y = [sy[idx[i-1]]-ydif*tz[i-1]], z=[-sz[idx[i-1]]], marker_color="midnightblue",marker_symbol = "x",marker_size=6,showlegend = False))
+                fig.add_trace(go.Scatter3d(mode = "markers", x=sx[idx]+xdif*tz[:i], y = sy[idx]-ydif*tz[:i], z=-sz[idx], marker_color="midnightblue",marker_size=3,showlegend = False))
+
+            fig.add_trace(go.Scatter3d(x=[0,0,xdif,xdif*2,xdif*3,xdif*4,xdif*5]+sx[0], y=[0,0,-ydif,-ydif*2,-ydif*3,-ydif*4,-ydif*5]+sy[0], z=[0,-0.5,-1.5,-2.5,-3.5,-4.5,-5.5], mode='text',text = ["Depth:","0.5","1.5","2.5","3.5","4.5","5.5"],textfont=dict(family="sans serif",size=25,color="black"),showlegend=False))
+            for j in range(6):
+                fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, 0*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+                fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + 0*P + 0, (N-1)*M*P + 0*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+                fig.add_trace(go.Scatter3d(x=[0,0]+sx[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[(N-1)*M*P + 0*P + 0, (N-1)*M*P + (M-1)*P + 0]]-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+                fig.add_trace(go.Scatter3d(x=[0,0]+sx[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+xdif*j, y=[0,0]+sy[[0*M*P + (M-1)*P + 0, (N-1)*M*P + (M-1)*P + 0]]+-ydif*j, z=np.array([-0.5,-0.5])-j, mode='lines',line = dict(color='black'),showlegend=False))
+
+
+            fig.add_trace(go.Scatter3d(x=xarrow, 
+                                            y=yarrow,
+                                            z=np.array([0,0,0,0,0])-0.5,
+                                            line=dict(color='black',width=12),
+                                            mode='lines+text',
+                                            text=["","", "N","",""],
+                                            showlegend=False,
+                                            textfont=dict(
+                                                family="sans serif",
+                                                size=25,
+                                                color="LightSeaGreen")))
+
+            camera = dict(
+                        eye=dict(x=1.2, 
+                                y=-1.2, 
+                                z=1.3),
+                        center=dict(x=0.2, y=-0.2, z=0.18))
+            fig.update_scenes(xaxis_visible=False, 
+                                yaxis_visible=False,zaxis_visible=False,camera = camera)
+            fig.update_layout(autosize=False,
+                            width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+            #fig.write_html("./mission/"+ self.file + "/figures/mission/" + str(i) + ".html",auto_open = True)
+            fig.write_image("./mission/"+ self.file + "/figures/mission/" + str(i) + ".png",engine="orca",scale=1)
+            self.update(idx=[i])
+            value = self.auv.mu
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+        video = cv2.VideoWriter('./mission/'+ self.file + '/figures/mission/video.mp4', fourcc, 30, (1000, 1000))
+
+        for i in range(self.mdata.shape[0]):
+            img = cv2.imread('./mission/'+ self.file + '/figures/mission/' + str(i) + '.png')
+            video.write(img)
+
+        cv2.destroyAllWindows()
+        video.release()
