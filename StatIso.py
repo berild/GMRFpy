@@ -87,7 +87,7 @@ class StatIso:
             self.Q_fac = self.cholesky(self.Q)
             assert(self.Q_fac != -1)
     
-    def fit(self,data, r, S, par = None,verbose = False, fgrad = True):
+    def fit(self,data, r, S, par = None,verbose = False, fgrad = True,end = None):
         if par is None:
             par = np.array([-1,-1,3])
         self.data = data
@@ -96,6 +96,7 @@ class StatIso:
         self.opt_steps = 0
         self.grad = fgrad
         self.verbose = verbose
+        self.end = end
         if self.grad:
             res = minimize(self.logLike, x0 = par,jac = True, method = "BFGS",tol = 1e-4)
             res = res['x']
