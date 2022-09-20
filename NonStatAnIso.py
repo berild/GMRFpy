@@ -65,6 +65,7 @@ class NonStatAnIso:
         self.jac = np.array([-100]*190)
         self.loaded = False
         self.truth = None
+        self.end = None
 
     def setGrid(self,grid):
         self.grid = grid
