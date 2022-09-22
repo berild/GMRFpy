@@ -155,7 +155,7 @@ class NonStatAnIso:
             mods = np.array(['SI','SA','NI','NA'])
             dhos = np.array(['100','10000','27000'])
             rs = np.array([1,10,100])
-            file = './fits/' + mods[simmod-1] + '-NA-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
+            file = './fits/NA-' + mods[simmod-1] + '-dho' + dhos[dho-1] + '-r' + str(rs[r-1]) + '-' + str(num) +'.npz'
             print(file)
         fitmod = np.load(file)
         self.S = sparse.eye(self.n)
