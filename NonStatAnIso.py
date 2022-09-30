@@ -189,9 +189,12 @@ class NonStatAnIso:
     #     if n ==1:
     #         data = data.reshape(self.n)
     #     return(data)
-    def sample(self,n = 1):
+    def sample(self,n = 1,simple = False):
         z = np.random.normal(size = self.n*n).reshape(self.n,n)
-        data = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n*n).reshape(self.n,n)*np.exp(self.sigma)
+        if simple:
+            data = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) 
+        else:
+            data = self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) + np.random.normal(size = self.n*n).reshape(self.n,n)*np.exp(self.sigma)
         return(data)
 
     def sim(self):
