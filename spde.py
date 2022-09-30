@@ -77,6 +77,9 @@ class spde:
         elif (self.model==4):
             from NonStatAnIso import NonStatAnIso
             self.mod = NonStatAnIso(grid = self.grid,par=par)
+        elif (self.model==5):
+            from ocean import NonStatAnIso
+            self.mod = NonStatAnIso(grid = self.grid,par=par)
         else:
             print("Not a implemented model (1-4)...")
 
@@ -140,7 +143,7 @@ class spde:
         else:
             self.define(model = model)
         #return(self.mod.sample(n = n,Q_fac = Q_fac, sigma = sigma, simple = simple))
-        return(self.mod.sample(n = n))
+        return(self.mod.sample(n = n, simple = simple))
         
     def Mvar(self):
         self.mod.setQ()
