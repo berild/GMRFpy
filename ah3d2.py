@@ -5,13 +5,6 @@ from scipy import sparse
 
 lib = ctypes.cdll.LoadLibrary('./libAH3D2.so')
 
-import ctypes
-import numpy as np
-from scipy import sparse
-
-
-lib = ctypes.cdll.LoadLibrary('./libAH3D2.so')
-
 def AH(M, N, K, H, hx, hy,hz):
     fnew = lib.AH_new
     fnew.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, np.ctypeslib.ndpointer(dtype=np.float64,ndim=4,shape = (M*N*K,6,3,3)), ctypes.c_double,ctypes.c_double,ctypes.c_double]
