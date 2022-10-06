@@ -174,7 +174,7 @@ class NonStatAnIso:
         A_mat = self.Dv@Dk - AH(self.grid.M,self.grid.N,self.grid.P,Hs,self.grid.hx,self.grid.hy,self.grid.hz)
         self.Q = A_mat.transpose()@self.iDv@A_mat
         self.Q_fac = self.cholesky(self.Q)
-        self.mvar = rqinv(self.Q).diagonal()
+        #self.mvar = rqinv(self.Q).diagonal()
 
     # def sample(self,n = 1, Q_fac = None, sigma = None, simple = False):
     #     if Q_fac is None:
@@ -348,7 +348,7 @@ class NonStatAnIso:
             data = data.reshape(-1,1)
             mu_c = mu_c.reshape(-1,1)
         if self.grad:
-            if np.abs(self.likediff) < 0.01:
+            if np.abs(self.likediff) < 0.001:
                 Qinv =  rqinv(Q) 
                 Qcinv = rqinv(Q_c)
             else:
