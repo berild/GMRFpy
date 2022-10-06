@@ -329,7 +329,7 @@ class StatAnIso:
             data = data.reshape(-1,1)
             mu_c = mu_c.reshape(-1,1)
         if self.grad:
-            if np.abs(self.likediff) < 0.01:
+            if np.abs(self.likediff) < 0.001:
                 Qinv = rqinv(Q)
                 Qcinv = rqinv(Q_c)
             else:
