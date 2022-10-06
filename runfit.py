@@ -21,10 +21,10 @@ def fitPar(model,data,start):
 
 
 def findFits(model, data, start):
-    if (start + 100)>101:
+    if (start + 33)>101:
         end = 101
     else:
-        end = start+ 100
+        end = start+ 33
     if model != data:
         vers = np.array([[i,j,k] for i in range(start,end) for j in range(1,3) for k in range(1,3)])
     else:
