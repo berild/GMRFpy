@@ -21,7 +21,10 @@ def fitPar(model,data,start):
 
 
 def findFits(model, data, start):
-    if (start + 33)>101:
+    if start == -1:
+        start = 1
+        end = 101
+    elif (start + 33)>101:
         end = 101
     else:
         end = start+ 33
