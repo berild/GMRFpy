@@ -19,7 +19,7 @@ def rqinv(Q):
     return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 
-def main(argv):
+def main():
     modstr = np.array(["SI", "SA", "NA"])
     dho = np.array(["100","10000"])
     r = np.array(["1","10"])
