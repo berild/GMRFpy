@@ -56,7 +56,7 @@ def main():
                                 #sigma = np.delete(np.sqrt(rqinv(Q).diagonal()),tmp['locs'+dho[j]])
                                 #z = (test - pred)/sigma[:,np.newaxis]
                                 #res[2 if infmod == 4 else infmod-1,1] = np.mean(sigma[:,np.newaxis]*(- 2/np.sqrt(np.pi) + 2*norm.pdf(z) + z*(2*norm.cdf(z)-1)))
-                        np.save(res,"./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy")
+                        np.save("./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy",res)
                         print("Finished " + modstr[i]+ " " +str(l))
     return(True)
 
