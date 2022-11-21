@@ -27,7 +27,7 @@ def main():
         for j in range(len(dho)):
             for k in range(len(r)):
                 for l in np.arange(1,101):
-                    if os.path.exists("./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz"):
+                    if os.path.exists("./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy"):
                         continue
                     else:
                         mod1 = os.path.exists("./fits/NA-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
@@ -35,7 +35,7 @@ def main():
                         mod3 = os.path.exists("./fits/SI-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
                         if mod1 and mod2 and mod3:
                             print("Running " + modstr[i]+ " " + str(l))
-                            res = np.zeros((3,2))
+                            res = np.zeros(3)
                             for infmod in [1,2,4]:
                                 mod = spde(model = infmod)
                                 tmp = np.load('./simulations/' + modstr[i] + '-'+str(l)+".npz")
@@ -52,10 +52,10 @@ def main():
                                 Q_fac.cholesky_inplace(Q)
                                 pred = - Q_fac.solve_A(S.transpose().tocsc())@((S@mu)[:,np.newaxis] - data)*1/np.exp(mod.mod.sigma)**2
                                 pred = np.delete(pred,tmp['locs'+dho[j]],axis = 0)
-                                res[2 if infmod == 4 else infmod-1,0] = np.sqrt(np.mean((pred-test)**2))
-                                sigma = np.delete(np.sqrt(rqinv(Q).diagonal()),tmp['locs'+dho[j]])
-                                z = (test - pred)/sigma[:,np.newaxis]
-                                res[2 if infmod == 4 else infmod-1,1] = np.mean(sigma[:,np.newaxis]*(- 2/np.sqrt(np.pi) + 2*norm.pdf(z) + z*(2*norm.cdf(z)-1)))
+                                res[2 if infmod == 4 else infmod-1] = np.sqrt(np.mean((pred-test)**2))
+                                #sigma = np.delete(np.sqrt(rqinv(Q).diagonal()),tmp['locs'+dho[j]])
+                                #z = (test - pred)/sigma[:,np.newaxis]
+                                #res[2 if infmod == 4 else infmod-1,1] = np.mean(sigma[:,np.newaxis]*(- 2/np.sqrt(np.pi) + 2*norm.pdf(z) + z*(2*norm.cdf(z)-1)))
                         np.save(res,"./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy")
                         print("Finished " + modstr[i]+ " " +str(l))
     return(True)
