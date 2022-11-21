@@ -30,11 +30,11 @@ def main():
                     if os.path.exists("./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz"):
                         continue
                     else:
-                        mod1 = os.path.exists("./fits/"+modstr[i] +"-NA"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
-                        mod2 = os.path.exists("./fits/"+modstr[i] +"-SA"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
-                        mod3 = os.path.exists("./fits/"+modstr[i] +"-SI"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        mod1 = os.path.exists("./fits/NA-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        mod2 = os.path.exists("./fits/SA-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        mod3 = os.path.exists("./fits/SI-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
                         if mod1 and mod2 and mod3:
-                            print("Running " + modstr[i]+ str(l))
+                            print("Running " + modstr[i]+ " " + str(l))
                             res = np.zeros((3,2))
                             for infmod in [1,2,4]:
                                 mod = spde(model = infmod)
@@ -43,7 +43,7 @@ def main():
                                 ks = tmp['locs'+dho[j]]
                                 test = (tmp['data']*1)[:,:(int(r[k]))]
                                 test = np.delete(test,tmp['locs'+dho[j]],axis = 0)
-                                mod.loadFit(file = "./fits/" + modstr[i] +"-"+ modstr[2 if infmod == 4 else infmod-1]+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                                mod.loadFit(file = "./fits/"+ modstr[2 if infmod == 4 else infmod-1]+ "-" + modstr[i] + '-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
                                 mu = np.zeros(mod.mod.n)
                                 Q = mod.mod.Q.copy()
                                 Q_fac = mod.mod.Q_fac
@@ -57,7 +57,7 @@ def main():
                                 z = (test - pred)/sigma[:,np.newaxis]
                                 res[2 if infmod == 4 else infmod-1,1] = np.mean(sigma[:,np.newaxis]*(- 2/np.sqrt(np.pi) + 2*norm.pdf(z) + z*(2*norm.cdf(z)-1)))
                         np.save(res,"./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy")
-                        print("Finished " + modstr[i]+ str(l))
+                        print("Finished " + modstr[i]+ " " +str(l))
     return(True)
 
 if __name__ == "__main__":
