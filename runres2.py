@@ -3,48 +3,46 @@ import numpy as np
 import os
 from spde import spde
 from scipy import sparse
+import rpy2.robjects as robj
+from rpy2.robjects.packages import importr
+importr("Matrix")
+robj.r.source("rqinv.R")
+from scipy.stats import norm
+
+def rqinv(Q):
+    tshape = Q.shape
+    Q = Q.tocoo()
+    r = Q.row
+    c = Q.col
+    v = Q.data
+    tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
+    return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape))
 
 
 def main(argv):
     modstr = np.array(["SI", "SA", "NA"])
-    dho = np.array(["100","10000","27000"])
-    rs = np.array(["1","10","100"])
-    if not os.path.exists("completed2.npy"):
-        completed = np.zeros(9,dtype = "bool")
-    else: 
-        completed = np.load("completed2.npy")
-    if not os.path.exists("results2.npy"):
-        res = np.zeros((2,9,4))
-    else:
-        res = np.load('results2.npy')
-    for simmod in np.arange(1,4):
-        for infmod in np.arange(1,4):
-            if completed[(simmod-1)*3 + infmod-1]:
-                continue
-            print("Simmod: " + modstr[simmod-1] + " | infmod: " + modstr[infmod-1])
-            for tdho in np.arange(1,3):
-                for tr in np.arange(1,3):
-                    print("DHO: " + dho[tdho-1] + " | r: " + rs[tr-1])
-                    tres = []
-                    mres = []
-                    count = 0
-                    for file in os.listdir("./fits/"):
-                        if file.startswith(modstr[infmod-1]+"-"+modstr[simmod-1]+'-dho'+dho[tdho-1]+'-r' + rs[tr-1]):
-                            if os.path.exists("./preds/"+ modstr[infmod-1]+"-"+modstr[simmod-1]+'-dho'+dho[tdho-1]+'-r' + rs[tr-1] + '.npz'):
-                                tmpres = np.load("./preds/"+ modstr[infmod-1]+"-"+modstr[simmod-1]+'-dho'+dho[tdho-1]+'-r' + rs[tr-1] + '.npz')
-                                tres.append(tmpres['pred'])
-                                mres.append(tmpres['mvar'])
-                            else:   
+    dho = np.array(["100","10000"])
+    r = np.array(["1","10"])
+    for i in range(len(modstr)):
+        for j in range(len(dho)):
+            for k in range(len(r)):
+                for l in np.arange(1,101):
+                    if os.path.exists("./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz"):
+                        continue
+                    else:
+                        mod1 = os.path.exists("./fits/"+modstr[i] +"-NA"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        mod2 = os.path.exists("./fits/"+modstr[i] +"-SA"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        mod3 = os.path.exists("./fits/"+modstr[i] +"-SI"+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
+                        if mod1 and mod2 and mod3:
+                            res = np.zeros((3,2))
+                            for infmod in [1,2,4]:
                                 mod = spde(model = infmod)
-                                tmp = file.split('-')[2:]
-                                tnum = int(tmp[2][:(len(tmp[2])-4)])
-                                tmp = np.load('./simulations/' + modstr[simmod-1] + '-'+str(tnum)+".npz")
-                                data = (tmp['data']*1)[tmp['locs'+dho[tdho-1]],:(int(rs[tr-1]))]
-                                ks = tmp['locs'+dho[tdho-1]]
-                                test = (tmp['data']*1)[:,:(int(rs[tr-1]))]
-                                test = np.delete(test,tmp['locs'+dho[tdho-1]],axis = 0)
-
-                                mod.loadFit(file = "./fits/" + file)
+                                tmp = np.load('./simulations/' + modstr[i] + '-'+str(l)+".npz")
+                                data = (tmp['data']*1)[tmp['locs'+dho[j]],:(int(r[k]))]
+                                ks = tmp['locs'+dho[j]]
+                                test = (tmp['data']*1)[:,:(int(r[k]))]
+                                test = np.delete(test,tmp['locs'+dho[j]],axis = 0)
+                                mod.loadFit(file = "./fits/" + modstr[i] +"-"+ modstr[2 if infmod == 4 else infmod-1]+'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npz")
                                 mu = np.zeros(mod.mod.n)
                                 Q = mod.mod.Q.copy()
                                 Q_fac = mod.mod.Q_fac
@@ -52,19 +50,12 @@ def main(argv):
                                 Q = Q + S.transpose()@S*1/np.exp(mod.mod.sigma)**2
                                 Q_fac.cholesky_inplace(Q)
                                 pred = - Q_fac.solve_A(S.transpose().tocsc())@((S@mu)[:,np.newaxis] - data)*1/np.exp(mod.mod.sigma)**2
-                                pred = np.delete(pred,tmp['locs'+dho[tdho-1]],axis = 0)
-                                tres.append(np.mean((pred-test)**2))
-                                mod.Mvar()
-                                mres.append(np.std(mod.mod.mvar))
-                                if os.path.exists("./preds"):
-                                    os.mkdir("./preds")
-                                np.savez("./preds/"+ modstr[infmod-1]+"-"+modstr[simmod-1]+'-dho'+dho[tdho-1]+'-r' + rs[tr-1] + '.npz',pred = np.mean((pred-test)**2), mvar = np.std(mod.mod.mvar))
-                    res[0,(simmod-1)*3 + infmod - 1, (tdho-1)*2 + tr - 1] = np.mean(tres)
-                    res[1,(simmod-1)*3 + infmod - 1, (tdho-1)*2 + tr - 1] = np.mean(mres)
-                    np.save('results2.npy',res)
-                    if count == 400:
-                        completed[(simmod-1)*3 + infmod - 1] = True
-                        np.save('completed2.npy',completed)
+                                pred = np.delete(pred,tmp['locs'+dho[j]],axis = 0)
+                                res[2 if infmod == 4 else infmod-1,0] = np.sqrt(np.mean((pred-test)**2))
+                                sigma = rqinv(Q).diagonal()
+                                z = (test - pred)/sigma[:,np.newaxis]
+                                res[2 if infmod == 4 else infmod-1,1] = np.mean(sigma[:,np.newaxis]*(- 2/np.sqrt(np.pi) + 2*norm.pdf(z) + z*(2*norm.cdf(z)-1)))
+                        np.save(res,"./fits/s2-"+modstr[i] +'-dho'+dho[j] +'-r' + r[k]+"-"+ str(l)+".npy")
     return(True)
 
 if __name__ == "__main__":
