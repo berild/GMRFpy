@@ -74,7 +74,7 @@ class mission:
         assert self.emulator_exists, "No emulator defined"
         assert self.assimilate_exists, "No assimilation defined"
         assert self.mu is not None, "No prior mean defined"
-        self.auv = auv(self.mod,self.mu,self.mdata['sd'].mean())
+        self.auv = auv(self.mod,self.mu,np.sqrt((self.mdata['sd']**2).mean()))
         self.auv_exists = True
 
     def update(self, idx=None, fold=None, plot = False,keep = False, txt = None):
@@ -111,8 +111,8 @@ class mission:
         assert self.auv_exists, "No AUV defined"
         if fold is None:
             if len(self.mdata['fold'].unique()) == 1:
-                self.mdata['fold'] = np.random.randint(8,size = self.mdata.shape[0]) + 1
-                fold = np.arange(8)+1
+                self.mdata['fold'] = np.random.randint(9,size = self.mdata.shape[0]) + 1
+                fold = np.arange(9)+1
             else:
                 fold = self.mdata['fold'].unique()
         if version == 1:
@@ -138,7 +138,42 @@ class mission:
                 err[i,2] = self.logScore(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
                 self.auv.loadKeep()
             err_df = pd.DataFrame({'RMSE': err[:,0],'CRPS': err[:,1],'log-score': err[:,2]})
+        elif version == 3:
+            pros = np.arange(0,0.99,0.05)
+            rep = 10
+            err = np.zeros((len(fold)*rep,pros.shape[0]+1,2))
+            tot = self.mdata.shape[0]
+            counts = np.array([sum(self.mdata['fold']==i) for i in fold])
+            for i in range(len(fold)):
+                for l in range(rep):
+                    rfold = np.append(fold[i],np.random.choice(np.append(fold[(i+1):],fold[:i]),fold.shape[0]-1,replace = False))
+                    for j in tqdm(range(pros.shape[0])):
+                        tsum = 0
+                        gpros = round(pros[j]*tot)
+                        idxs = np.array([],dtype = 'int32')
+                        for k in rfold:
+                            tsum = tsum + counts[k-1]
+                            if (tsum > gpros):
+                                rem = gpros - (tsum - counts[k-1])
+                                idxs = np.append(idxs, np.where(self.mdata['fold']==k)[0][:rem])
+                                break
+                            else:
+                                idxs = np.append(idxs,np.where(self.mdata['fold']==k)[0])
+                        if idxs.shape[0] == 0:
+                            tmpidx = np.arange(self.mdata.shape[0])
+                        else:
+                            self.update(idx = idxs)
+                            tmpidx = np.delete(np.arange(self.mdata.shape[0]), idxs)
+                        tmp = self.predict(idx = tmpidx)
+                        sigma = np.sqrt(self.auv.var(simple = simple))
+                        err[i*rep + l,j,0] = self.RMSE(tmp,self.mdata['data'][tmpidx])
+                        err[i*rep + l,j,1] = self.CRPS(tmp,self.mdata['data'][tmpidx],sigma[self.mdata['idx'][tmpidx]])
+                        self.auv.loadKeep()
+            merr = err.mean(axis = 0)
+            serr = err.std(axis = 0)
+            err_df = pd.DataFrame({'RMSE': merr[:,0],'RMSE std': serr[:,0],'CRPS': merr[:,1],'CRPS std': serr[:,1]})
         return(err_df)
+
     
 
 
@@ -213,38 +248,30 @@ class mission:
 
     def plot_assimilate(self):
         assert self.assimilate_exists, "Non assimilation found"
-        if self.mdata['fold'].max()>3:
-            nrows = np.ceil(self.mdata['fold'].max()/3).astype('int32')
-            ncols = 3
-        else:
-            nrows = self.mdata['fold'].max().astype('int32')
-            ncols = 1
         im = mpimg.imread('./mission/'+self.file+'/AOOsmall.png')
         tmp = np.load('./mission/'+self.file+'/AOOdat.npy')
         im_lon = np.linspace(tmp[:,1].min(),tmp[:,1].max(),im.shape[1])
         im_lat = np.linspace(tmp[:,0].min(),tmp[:,0].max(),im.shape[0])
-        fig, axs = plt.subplots(ncols = ncols,nrows= nrows,figsize =(ncols*7.5,nrows*7.5))
-        for i in range(nrows):
-            for j in range(ncols):
-                if (i*3+j+1) > self.mdata['fold'].max().astype('int32'):
-                    fig.delaxes(axs[i,j])
-                tmp = self.mdata.loc[self.mdata['fold'] == (i*3+j+1)]
-                pos_lat = self.slat[tmp['idx']]
-                pos_lon = self.slon[tmp['idx']]
-                y = np.zeros(pos_lat.shape)
-                x = np.zeros(pos_lon.shape)
-                for k in range(pos_lat.size):
-                    y[k] = np.nanargmin((pos_lat[k]-im_lat)**2)
-                    x[k] = np.nanargmin((pos_lon[k]-im_lon)**2)
-                y = im_lat.shape[0] - y
-                axs[i,j].imshow(im)
-                axs[i,j].plot(x,y,'-ob',markersize=4)
-                axs[i,j].set_axis_off()
-                axs[i,j].text(100, 100, chr(i*3+j+97),fontweight="bold",fontsize=25)
-        fig.tight_layout()
-        plt.savefig('./mission/'+self.file+'/figures/folds.png', dpi=300)
+        depth = np.array([0.5,1.5,2.5,3.5,4.5,5.5])
+        for i in range(6):
+            fig, ax = plt.subplots(figsize =(10,10))
+            tmp = self.mdata['idx'][self.mod.grid.sz[self.mdata['idx']]==depth[i]]
+            pos_lat = self.slat[tmp]
+            pos_lon = self.slon[tmp]
+            y = np.zeros(pos_lat.shape)
+            x = np.zeros(pos_lon.shape)
+            for k in range(pos_lat.size):
+                y[k] = np.nanargmin((pos_lat[k]-im_lat)**2)
+                x[k] = np.nanargmin((pos_lon[k]-im_lon)**2)
+            y = im_lat.shape[0] - y
+            ax.imshow(im)
+            ax.plot(x,y,'ob',markersize=6)
+            ax.set_axis_off()
+            #ax.text(100, 100, chr(i*3+j+97),fontweight="bold",fontsize=25)
+            fig.tight_layout()
+            fig.savefig('./mission/'+self.file+'/figures/folds%.d'%i + '.png', dpi=300)
 
-    def check_emulator(self,model=4,version = 1):
+    def check_emulator(self,model=4,version = 1, plot = 1):
         assert self.emulator_exists, 'No emulator exists'
         assert self.assimilate_exists, 'No assimilation exists'
         if version==2:
@@ -255,42 +282,66 @@ class mission:
         for i in range(time_data.shape[0]):
             timeidx[i] = np.nanargmin((time_emu-time_data[i])**2)
         timeidx = timeidx.astype('int32')
-        if version ==1:
-            err = (self.edata[self.mdata['idx'],timeidx]-self.mdata['data']).to_numpy()
-        elif version == 2:
-            err = (self.auv.mu[self.mdata['idx']]-self.mdata['data']).to_numpy()
-        fig,ax = plt.subplots(ncols = 2,figsize = (30,10))
-        if version == 1:
+        #if version ==1:
+        err = (self.edata[self.mdata['idx'],timeidx]-self.mdata['data']).to_numpy()
+        #elif version == 2:
+        #    err = (self.auv.mu[self.mdata['idx']]-self.mdata['data']).to_numpy()
+        if plot == 1:
+            fig,ax = plt.subplots(ncols = 2,figsize = (30,10))
+            #if version == 1:
             im1 = ax[0].scatter(self.szll[self.mdata['idx']],err, c = self.edata[self.mdata['idx'],timeidx],cmap = plt.get_cmap('coolwarm'))
-        elif version == 2:
-            im1 = ax[0].scatter(self.szll[self.mdata['idx']],err, c = self.auv.mu[self.mdata['idx']],cmap = plt.get_cmap('coolwarm'))
-        cbar1 = fig.colorbar(im1, ax=ax[0])
-        cbar1.set_label('SINMOD', rotation=270,fontsize = 20)
-        cbar1.ax.get_yaxis().labelpad = 15
-        ax[0].set_xticks(self.mod.grid.z,colors = 'black')
-        ax[0].set_xlabel('Depth', fontsize=20)
-        ax[0].set_ylabel('Bias (SINMOD - Measurment)', fontsize=20)
-        ax[0].axhline(c = 'k')
-        im = mpimg.imread('./mission/'+self.file+'/AOOsmall.png')
-        tmp = np.load('./mission/'+self.file+'/AOOdat.npy')
-        im_lon = np.linspace(tmp[:,1].min(),tmp[:,1].max(),im.shape[1])
-        im_lat = np.linspace(tmp[:,0].min(),tmp[:,0].max(),im.shape[0])
-        tmp = self.mdata
-        pos_lat = self.slat[tmp['idx']]
-        pos_lon = self.slon[tmp['idx']]
-        y = np.zeros(pos_lat.shape)
-        x = np.zeros(pos_lon.shape)
-        for k in range(pos_lat.size):
-            y[k] = np.nanargmin((pos_lat[k]-im_lat)**2)
-            x[k] = np.nanargmin((pos_lon[k]-im_lon)**2)
-        y = im_lat.shape[0] - y
-        ax[1].imshow(im)
-        im2 = ax[1].scatter(x,y,c = err,cmap = plt.get_cmap('coolwarm'))
-        ax[1].set_axis_off()
-        cbar2 = fig.colorbar(im2, ax=ax[1])
-        cbar2.ax.get_yaxis().labelpad = 15
-        cbar2.set_label('Bias (SINMOD - Measurment)', rotation=270,fontsize = 20)
-        plt.savefig('./mission/'+ self.file + '/figures/SINMOD_err.png', dpi=300)
+            #elif version == 2:
+            #    im1 = ax[0].scatter(self.szll[self.mdata['idx']],err, c = self.auv.mu[self.mdata['idx']],cmap = plt.get_cmap('coolwarm'))
+            cbar1 = fig.colorbar(im1, ax=ax[0])
+            cbar1.set_label('SINMOD', rotation=270,fontsize = 20)
+            cbar1.ax.get_yaxis().labelpad = 15
+            ax[0].set_xticks(self.mod.grid.z,colors = 'black')
+            ax[0].set_xlabel('Depth', fontsize=20)
+            ax[0].set_ylabel('Bias (SINMOD - Measurment)', fontsize=20)
+            ax[0].axhline(c = 'k')
+
+            im2 = ax[1].scatter(self.edata[self.mdata['idx'],timeidx],err, c = self.szll[self.mdata['idx']],cmap = plt.get_cmap('coolwarm'))
+            cbar2 = fig.colorbar(im2, ax=ax[1])
+            cbar2.set_label('Depth', rotation=270,fontsize = 20)
+            cbar2.ax.get_yaxis().labelpad = 15
+            ax[1].set_xlabel('SINMOD', fontsize=20)
+            ax[1].set_ylabel('Bias (SINMOD - Measurment)', fontsize=20)
+            ax[1].axhline(c = 'k')
+            fig.tight_layout()
+            fig.savefig('./mission/'+ self.file + '/figures/SINMOD_err.png', dpi=300)
+
+
+        if plot ==2:
+            dpts = self.szll[self.mdata['idx']]
+            fig,ax = plt.subplots(ncols = 3,figsize = (35,10))
+            
+            im = mpimg.imread('./mission/'+self.file+'/AOOsmall.png')
+            tmp = np.load('./mission/'+self.file+'/AOOdat.npy')
+            im_lon = np.linspace(tmp[:,1].min(),tmp[:,1].max(),im.shape[1])
+            im_lat = np.linspace(tmp[:,0].min(),tmp[:,0].max(),im.shape[0])
+            tmp = self.mdata
+            pos_lat = self.slat[tmp['idx']]
+            pos_lon = self.slon[tmp['idx']]
+            y = np.zeros(pos_lat.shape)
+            x = np.zeros(pos_lon.shape)
+            for k in range(pos_lat.size):
+                y[k] = np.nanargmin((pos_lat[k]-im_lat)**2)
+                x[k] = np.nanargmin((pos_lon[k]-im_lon)**2)
+            y = im_lat.shape[0] - y
+            zs = np.array([0.5,1.5,2.5])
+            im2 = list()
+            cbar = list()
+            for i in range(3):
+                ax[i].set_title("Depth: %.1f"%zs[i],fontsize = 18)
+                ax[i].imshow(im)
+                rem = dpts == zs[i]
+                im2.append(ax[i].scatter(x[rem],y[rem],c = err[rem],cmap = plt.get_cmap('coolwarm')))
+                ax[i].set_axis_off()
+                cbar.append(fig.colorbar(im2[i], ax=ax[i]))
+                cbar[i].ax.get_yaxis().labelpad = 15
+                cbar[i].set_label('Bias (SINMOD - Measurment)', rotation=270,fontsize = 20)
+            fig.tight_layout()
+            fig.savefig('./mission/'+ self.file + '/figures/SINMOD_err_map.png', dpi=300)
 
     def emulatorComp(self,save=False,pars = False, model = 4,new = False, mean = None):
         tmp = np.load("./mission/" +self.file+"/mission.npz")
@@ -542,6 +593,7 @@ class mission:
             mu = data.mean(axis = 1)
             rho = np.sum((data[:,1:]-mu[:,np.newaxis])*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]),axis = 1)/np.sum((data[:,:(data.shape[1]-1)] - mu[:,np.newaxis])**2,axis = 1)
             self.muf = (data[:,1:]-mu[:,np.newaxis]) - rho[:,np.newaxis]*(data[:,:(data.shape[1]-1)] - mu[:,np.newaxis]) + np.random.normal(0,0.2,data.shape[0]*(data.shape[1]-1)).reshape(data.shape[0],data.shape[1]-1)
+            self.rho = rho
         elif version2 == "tf":
             lag = 6
             data = self.S@self.edata
@@ -564,7 +616,7 @@ class mission:
     def RMSE(self,pred,truth):
         return(np.sqrt(np.mean((pred-truth)**2)))
 
-    def plot(self,value = None, version = 1, filename = None,pos = None):
+    def plot(self,value = None, version = 1, filename = None,pos = None,tidx = None):
         pio.orca.shutdown_server()
         M = self.mod.grid.M
         N = self.mod.grid.N
@@ -572,28 +624,32 @@ class mission:
         sx = self.mod.grid.sx
         sy = self.mod.grid.sy
         sz = self.mod.grid.sz
-        if version == 1 or version == 2:
+        if version == 1:
             cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
                 (0.50, "rgb(192, 245, 240)"), (0.60, "rgb(192, 245, 240)"),
                 (0.60, "rgb(241, 241, 225)"),  (0.70, "rgb(241, 241, 225)"),
                 (0.70, "rgb(255, 188, 188)"),  (0.80, "rgb(255, 188, 188)"),
                 (0.80, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
-            if version == 1:
-                if value is None:
-                    assert self.mu is not None, "No mean assigned"
-                    value = self.mu
-                cmin = value.min()+2
-                cmax = value.max()+2
-                if filename is None:
-                    filename = "mean"
-            else: 
-                if value is None:
-                    self.mod.Mvar()
-                    value = self.mod.mod.mvar
-                cmin = value.min()
-                cmax = value.max()
-                if filename is None:
-                    filename = "mvar"
+            if value is None:
+                assert self.mu is not None, "No mean assigned"
+                value = self.mu
+            cmin = value.min()+2
+            cmax = value.max()+2
+            if filename is None:
+                filename = "mean"
+        elif version == 2: 
+            cs = [(0.00, "rgb(245, 245, 245)"),   (0.20, "rgb(245, 245, 245)"),
+            (0.20, "rgb(245, 201, 201)"), (0.40, "rgb(245, 201, 201)"),
+            (0.40, "rgb(245, 164, 164)"),  (0.60, "rgb(245, 164, 164)"),
+            (0.60, "rgb(245, 117, 117)"),  (0.80, "rgb(245, 117, 117)"),
+            (0.80, "rgb(245, 67, 67)"),  (1.00, "rgb(245, 67, 67)")]
+            if value is None:
+                self.mod.Mvar()
+                value = self.mod.mod.mvar
+            cmin = value.min()
+            cmax = value.max()
+            if filename is None:
+                filename = "mvar"
         elif version == 3:
             cs = [(0.00, "rgb(245, 245, 245)"),   (0.20, "rgb(245, 245, 245)"),
                 (0.20, "rgb(245, 201, 201)"), (0.40, "rgb(245, 201, 201)"),
@@ -604,11 +660,29 @@ class mission:
                 if pos is not None:
                     value = self.mod.Corr(pos = pos) 
                 else:
+                    pos = [22,2,0]
                     value = self.mod.Corr(pos = [22,2,0])
-            cmin = value.min()
-            cmax = value.max()
+            cmin = 0
+            cmax = 1
             if filename is None:
                 filename = "mcorr"
+
+        elif version == 4:
+            cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
+                (0.50, "rgb(192, 245, 240)"), (0.60, "rgb(192, 245, 240)"),
+                (0.60, "rgb(241, 241, 225)"),  (0.70, "rgb(241, 241, 225)"),
+                (0.70, "rgb(255, 188, 188)"),  (0.80, "rgb(255, 188, 188)"),
+                (0.80, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
+            if value is None:
+                if tidx is not None:
+                    value = self.edata[:,tidx]
+                    time = self.time[tidx].strftime("%H:%M")
+                else:
+                    value = self.edata[:,0]
+                    time = self.time[0].strftime("%H:%M")
+            cmin = self.mu.min()
+            cmax = self.mu.max()
+
         xarrow = np.array([sx.max()-175,sx.max()-50,sx.max()-50,sx.max()-50,sx.max()-125])
         yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
         xdif = self.mod.grid.A/4
@@ -652,8 +726,22 @@ class mission:
                             yaxis_visible=False,zaxis_visible=False,camera = camera)
         fig.update_layout(autosize=False,
                         width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+        if version == 4:
+            fig.update_layout(title={
+                                    'text': time,
+                                    'y':0.9,
+                                    'x':0.5,
+                                    'xanchor': 'center',
+                                    'yanchor': 'top',
+                                    'font_size': 30},autosize=False,
+                        width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+        else:
+            fig.update_layout(autosize=False,
+                        width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+
         fig.write_html("test.html", auto_open = True)
-        #fig.write_image("./mission/" + self.file + "/figures/" + filename + ".png",engine="orca",scale=1)
+        if filename is not None:
+            fig.write_image("./mission/" + self.file + "/figures/" + filename + ".png",engine="orca",scale=1)
 
 
     def plot_update(self,value, idx=None, txt=None):
@@ -724,32 +812,52 @@ class mission:
             fig.write_html("test.html", auto_open = True)
         else:
             fig.write_image("./mission/" + self.file + "/figures/" + txt + ".png",engine="orca",scale=1)        
-
-
-    def mission_video(self,start = 0):
+    
+    def mission_video(self,start = 0,l = None):
         M = self.mod.grid.M
         N = self.mod.grid.N
         P = self.mod.grid.P
         sx = self.mod.grid.sx
         sy = self.mod.grid.sy
         sz = self.mod.grid.sz
-        cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
+        
+        xarrow = np.array([sx.max()-175,sx.max()-50,sx.max()-50,sx.max()-50,sx.max()-125])
+        yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
+        xdif = self.mod.grid.A/4
+        ydif = self.mod.grid.B/4
+        tz = np.zeros(self.mdata.shape[0]-1)
+        if l is not None:
+            cmin = 0
+            cmax = 1
+            value = (self.auv.mu>l)*1.0
+            cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
+            (0.50, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
+        else:
+            cmin = self.auv.mu.min()
+            cmax = self.auv.mu.max()
+            value = self.auv.mu
+            cs = [(0.00, "rgb(127, 238, 240)"),   (0.50, "rgb(127, 238, 240)"),
             (0.50, "rgb(192, 245, 240)"), (0.60, "rgb(192, 245, 240)"),
             (0.60, "rgb(241, 241, 225)"),  (0.70, "rgb(241, 241, 225)"),
             (0.70, "rgb(255, 188, 188)"),  (0.80, "rgb(255, 188, 188)"),
             (0.80, "rgb(245, 111, 136)"),  (1.00, "rgb(245, 111, 136)")]
         
-        cmin = self.auv.mu.min()
-        cmax = self.auv.mu.max()
-        xarrow = np.array([sx.max()-175,sx.max()-50,sx.max()-50,sx.max()-50,sx.max()-125])
-        yarrow = np.array([sy.max()-183,sy.max()-58,sy.max()-133,sy.max()-58,sy.max() -58])
-        xdif = self.mod.grid.A/4
-        ydif = self.mod.grid.B/4
-        value = self.auv.mu
-        tz = np.zeros(self.mdata.shape[0]-1)
-        for i in tqdm(range(self.mdata.shape[0])):
+        if not (start==0):
+            for i in tqdm(range(start)):
+                self.update(idx=[i])
+                if i != 0:
+                    idx = np.array(self.mdata.iloc[:i]['idx'])
+                    tz[i-1] = np.where(sz[idx[i-1]] == [0.5,1.5,2.5,3.5,4.5,5.5])[0][0]
+                if l is not None:
+                    value = (self.auv.mu>l)*1.0
+                else:
+                    value = self.auv.mu
+        for i in tqdm(range(start,self.mdata.shape[0])):
             pio.orca.shutdown_server()
-            fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
+            if l is not None:
+                fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,tick0=0,dtick=1,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
+            else:
+                fig = go.Figure(data=[go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,0].flatten(), x=sx.reshape(N,M,P)[:,:,0].flatten(), y=sy.reshape(N,M,P)[:,:,0].flatten(),value=value.reshape(N,M,P)[:,:,0].flatten(),isomin = cmin,isomax = cmax,colorscale=cs,colorbar=dict(thickness=20,lenmode = "fraction", len = 0.80, ticklen=10,tickfont=dict(size=30, color='black')))])
             fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,1].flatten(), x=sx.reshape(N,M,P)[:,:,1].flatten()+xdif*1, y=sy.reshape(N,M,P)[:,:,1].flatten()-ydif*1,value=value.reshape(N,M,P)[:,:,1].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
             fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,2].flatten(), x=sx.reshape(N,M,P)[:,:,2].flatten()+xdif*2, y=sy.reshape(N,M,P)[:,:,2].flatten()-ydif*2,value=value.reshape(N,M,P)[:,:,2].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
             fig.add_trace(go.Isosurface(surface_count=1,z=-sz.reshape(N,M,P)[:,:,3].flatten(), x=sx.reshape(N,M,P)[:,:,3].flatten()+xdif*3, y=sy.reshape(N,M,P)[:,:,3].flatten()-ydif*3,value=value.reshape(N,M,P)[:,:,3].flatten(),isomin = cmin,isomax =cmax,colorscale=cs,showscale = False))
@@ -789,13 +897,19 @@ class mission:
             fig.update_scenes(xaxis_visible=False, 
                                 yaxis_visible=False,zaxis_visible=False,camera = camera)
             fig.update_layout(autosize=False,
-                            width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
+                                width=650,height=1200,scene_aspectratio=dict(x=1, y=1, z=1.0))
             #fig.write_html("./mission/"+ self.file + "/figures/mission/" + str(i) + ".html",auto_open = True)
             fig.write_image("./mission/"+ self.file + "/figures/mission/" + str(i) + ".png",engine="orca",scale=1)
             self.update(idx=[i])
-            value = self.auv.mu
+            if l is not None:
+                value = (self.auv.mu>l)*1.0
+            else:
+                value = self.auv.mu
         fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-        video = cv2.VideoWriter('./mission/'+ self.file + '/figures/mission/video.mp4', fourcc, 30, (1000, 1000))
+        if l is not None:
+            video = cv2.VideoWriter('./mission/'+ self.file + '/figures/mission/videoES.mp4', fourcc, 15, (650, 1200))
+        else:
+            video = cv2.VideoWriter('./mission/'+ self.file + '/figures/mission/video.mp4', fourcc, 15, (650, 1200))
 
         for i in range(self.mdata.shape[0]):
             img = cv2.imread('./mission/'+ self.file + '/figures/mission/' + str(i) + '.png')

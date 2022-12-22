@@ -120,7 +120,7 @@ class auv:
             n (int, optional): Number of realizations. Defaults to 1.
         """
         z = np.random.normal(size = self.n*n).reshape(self.n,n)
-        data = self.mu[:,np.newaxis] + self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False))  + np.random.normal(size = self.n*n).reshape(self.n,n)*self.sigma
+        data = self.mu[:,np.newaxis] + self.Q_fac.apply_Pt(self.Q_fac.solve_Lt(z,use_LDLt_decomposition=False)) # + np.random.normal(size = self.n*n).reshape(self.n,n)*self.sigma
         return(data)
 
     def update(self, data, keep=False):
@@ -156,6 +156,6 @@ class auv:
             c = Q.col
             v = Q.data
             tmpQinv =  np.array(robj.r.rqinv(robj.r["sparseMatrix"](i = robj.FloatVector(r+1),j = robj.FloatVector(c+1),x = robj.FloatVector(v))))
-            return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape).diagonal()+self.sigma**2)
+            return(sparse.csc_matrix((np.array(tmpQinv[:,2],dtype = "float32"), (np.array(tmpQinv[:,0],dtype="int32"), np.array(tmpQinv[:,1],dtype="int32"))), shape=tshape).diagonal())#+self.sigma**2)
         else:
             return(self.sample(n=DEFAULT_NUM_SAMPLES).var(axis = 1))
