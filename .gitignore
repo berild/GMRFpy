@@ -128,9 +128,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-simulations/S*
-fits/S*
-fits/N*
-simulations/N*
+# data files
+simulations/*
+fits/*
 data/*
 
+# c++ links
+*.so
+*.o
