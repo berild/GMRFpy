@@ -25,6 +25,11 @@ def AH(M, N, K, H, hx, hy,hz):
     fval.argtypes = [ctypes.c_void_p]
     fval.restype = np.ctypeslib.ndpointer(dtype=ctypes.c_double, shape = (M*N*K*19,))
     val = fval(obj)
+
+    rem = row != (M*N*K)
+    row = row[rem]
+    col = col[rem]
+    val = val[rem]
     res = sparse.csc_matrix((val, (row, col)), shape=(M*N*K, M*N*K))
 
     fdel = lib.AH_delete

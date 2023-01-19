@@ -30,6 +30,7 @@ AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double
                 int j_p = j + 1;
                 int m_p = m + 1;
                 int m_n = m - 1;
+                double rem = 0.0;
                 if ( i == 0 ) {
                     i_n = i;
                 }else if ( i == (numX - 1) ){
@@ -45,11 +46,123 @@ AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double
                 }else if ( m == (numZ - 1) ){
                     m_p = m;
                 }
-                k = j*numX*numZ + i*numZ + m;
-                for (int is=idx; is<(idx+19);++is){
-                    row[is] = k;
-                }
                 
+                k = int(j*numX*numZ + i*numZ + m);
+
+                if (k == int(j*numX*numZ + i*numZ + m_p)){
+                    rem = rem + hx*hy/hz*H[k][5][2][2] + hy/4.0*(H[k][1][2][0] - H[k][0][2][0]) + hx/4.0*(H[k][3][2][1] - H[k][2][2][1]);
+                    row[idx + 1] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 1] = k;
+                }
+                if (k == int(j*numX*numZ + i*numZ + m_n)){
+                    rem = rem + hx*hy/hz*H[k][4][2][2] - hy/4.0*(H[k][1][2][0] - H[k][0][2][0]) - hx/4.0*(H[k][3][2][1] - H[k][2][2][1]);
+                    row[idx + 2] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 2] = k;
+                }
+                if (k == int(j*numX*numZ + i_p*numZ + m)){
+                    rem = rem + hy*hz/hx*H[k][1][0][0] + hy/4.0*(H[k][5][0][1] - H[k][4][0][1]) + hz/4.0*(H[k][3][0][2] - H[k][2][0][2]);
+                    row[idx + 3] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 3] = k;
+                }
+                if (k == int(j*numX*numZ + i_n*numZ + m)){
+                    rem = rem + hy*hz/hx*H[k][0][0][0] - hy/4.0*(H[k][5][0][1] - H[k][4][0][1]) - hz/4.0*(H[k][3][0][2] - H[k][2][0][2]);
+                    row[idx + 4] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 4] = k;
+                }
+                if (k == int(j_p*numX*numZ + i*numZ + m)){
+                    rem = rem + hx*hz/hy*H[k][3][1][1] + hx/4.0*(H[k][5][1][2] - H[k][4][1][2]) + hz/4.0*(H[k][1][1][0] - H[k][0][1][0]);
+                    row[idx + 5] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 5] = k;
+                }
+                if (k == int(j_n*numX*numZ + i*numZ + m)){
+                    rem = rem + hx*hz/hy*H[k][2][1][1] - hx/4.0*(H[k][5][1][2] - H[k][4][1][2]) - hz/4.0*(H[k][1][1][0] - H[k][0][1][0]);
+                    row[idx + 6] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 6] = k;
+                }
+                if (k == int(j*numX*numZ + i_p*numZ + m_p)){
+                    rem = rem + hy/4.0*(H[k][1][2][0] + H[k][5][0][2]);
+                    row[idx + 7] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 7] = k;
+                }
+                if (k == int(j*numX*numZ + i_n*numZ + m_n)){
+                    rem = rem + hy/4.0*(H[k][0][2][0] + H[k][4][0][2]);
+                    row[idx + 8] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 8] = k;
+                }
+                if (k == int(j*numX*numZ + i_n*numZ + m_p)){
+                    rem = rem - hy/4.0*(H[k][0][2][0] + H[k][5][0][2]);
+                    row[idx + 9] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 9] = k;
+                }
+                if (k == int(j*numX*numZ + i_p*numZ + m_n)){
+                    rem = rem - hy/4.0*(H[k][1][2][0] + H[k][4][0][2]);
+                    row[idx + 10] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 10] = k;
+                }
+                if (k == int(j_p*numX*numZ + i*numZ + m_p)){
+                    rem = rem + hx/4.0*(H[k][3][2][1] + H[k][5][1][2]);
+                    row[idx + 11] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 11] = k;
+                }
+                 if (k == int(j_n*numX*numZ + i*numZ + m_n)){
+                    rem = rem + hx/4.0*(H[k][2][2][1] + H[k][4][1][2]);
+                    row[idx + 12] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 12] = k;
+                }
+                 if (k == int(j_n*numX*numZ + i*numZ + m_p)){
+                    rem = rem - hx/4.0*(H[k][2][2][1] + H[k][5][1][2]);
+                    row[idx + 13] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 13] = k;
+                }
+                 if (k == int(j_p*numX*numZ + i*numZ + m_n)){
+                    rem = rem - hx/4.0*(H[k][3][2][1] + H[k][4][1][2]);
+                    row[idx + 14] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 14] = k;
+                }
+                 if (k == int(j_p*numX*numZ + i_p*numZ + m)){
+                    rem = rem + hz/4.0*(H[k][1][1][0] + H[k][3][0][1]);
+                    row[idx + 15] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 15] = k;
+                }
+                 if (k == int(j_n*numX*numZ + i_n*numZ + m)){
+                    rem = rem + hz/4.0*(H[k][0][1][0] + H[k][2][0][1]);
+                    row[idx + 16] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 16] = k;
+                }
+                 if (k == int(j_n*numX*numZ + i_p*numZ + m)){
+                    rem = rem - hz/4.0*(H[k][1][1][0] + H[k][2][0][1]);
+                    row[idx + 17] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 17] = k;
+                }
+                 if (k == int(j_p*numX*numZ + i_n*numZ + m)){
+                    rem = rem - hz/4.0*(H[k][0][1][0] + H[k][3][0][1]);
+                    row[idx + 18] = int(numX*numY*numZ);
+                }else{
+                    row[idx + 18] = k;
+                }
+                //for (int is=idx; is<(idx+19);++is){
+                //    row[is] = k;
+                //}
+                
+                row[idx] = k;
+
                 col[idx] = k;
                 //z
                 col[idx + 1] = int(j*numX*numZ + i*numZ + m_p);
