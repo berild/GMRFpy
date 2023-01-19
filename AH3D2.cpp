@@ -46,7 +46,7 @@ AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double
                 }else if ( m == (numZ - 1) ){
                     m_p = m;
                 }
-                
+
                 k = int(j*numX*numZ + i*numZ + m);
 
                 if (k == int(j*numX*numZ + i*numZ + m_p)){
@@ -191,7 +191,7 @@ AH::AH(int numX, int numY, int numZ, const double (*H)[6][3][3],double hx,double
                 
                 //H indicies i-1/2, i+1/2, j-1/2, j+1/2, k-1/2, k+1/2
 
-                val[idx] = - hy*hz/hx*(H[k][1][0][0] + H[k][0][0][0]) - hx*hz/hy*(H[k][3][1][1] + H[k][2][1][1]) - hx*hy/hz*(H[k][5][2][2] + H[k][4][2][2]);
+                val[idx] = - hy*hz/hx*(H[k][1][0][0] + H[k][0][0][0]) - hx*hz/hy*(H[k][3][1][1] + H[k][2][1][1]) - hx*hy/hz*(H[k][5][2][2] + H[k][4][2][2]) + rem;
                 //z
                 val[idx + 1] = hx*hy/hz*H[k][5][2][2] + hy/4.0*(H[k][1][2][0] - H[k][0][2][0]) + hx/4.0*(H[k][3][2][1] - H[k][2][2][1]);
                 val[idx + 2] = hx*hy/hz*H[k][4][2][2] - hy/4.0*(H[k][1][2][0] - H[k][0][2][0]) - hx/4.0*(H[k][3][2][1] - H[k][2][2][1]);
