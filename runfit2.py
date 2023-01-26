@@ -1,0 +1,18 @@
+from mission import mission
+import sys
+
+def main(argv):
+    typ = int(argv)
+    if type == 1:
+       typstr = "nidelva_27_05_21"
+    elif type ==2:
+       typstr = "nidelva_08_09_22"
+    else: 
+       exit()
+    mis = mission(typstr)
+    mis.emulator()
+    mis.mean(version1 = "m", version2 = "tfc")
+    mis.fit(end = "test",verbose = True)
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
