@@ -2,10 +2,10 @@ from mission import mission
 import sys
 
 def main(argv):
-    typ = int(argv)
-    if type == 1:
+    typ = int(argv[0])
+    if typ == 1:
        typstr = "nidelva_27_05_21"
-    elif type ==2:
+    elif typ ==2:
        typstr = "nidelva_08_09_22"
     else: 
        exit()
