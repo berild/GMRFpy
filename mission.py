@@ -343,7 +343,7 @@ class mission:
             fig.tight_layout()
             fig.savefig('./mission/'+ self.file + '/figures/SINMOD_err_map.png', dpi=300)
 
-    def emulatorComp(self,save=False,pars = False, model = 4,new = False, mean = None):
+    def emulatorComp(self,save=False,pars = False, model = 4,new = False, mean = 1):
         tmp = np.load("./mission/" +self.file+"/mission.npz")
         tints = tmp['tints']*1
         tmpints = list()
