@@ -499,7 +499,7 @@ class mission:
         else:
             var_exists = True
         if var_exists:
-            self.emulatorComp(save=save,pars = pars, model = model, new=new,mean = mean)
+            self.emulatorComp(save=save,pars = pars, model = model, new=new,mean = 1)
             return
         nc = netCDF4.Dataset('./mission/' + self.file + '/SINMOD.nc')
         par = None
