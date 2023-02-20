@@ -85,12 +85,12 @@ def main(argv):
     for i in range(3): #dho
         for j in range(3): #r
             if model == 4:
-                res[0][:54,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54].mean(axis=0) - truth[:54]
-                res[1][:54,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54] - truth[:54][np.newaxis,:])**2,axis = 0))
-                res[0][54:189,(i)*3 + j] = np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]).mean(axis=0)- np.abs(truth[54:189])
-                res[1][54:189,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0))
-                res[0][189,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189].mean(axis=0) - truth[189]
-                res[1][189,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189] - truth[189])**2,axis = 0))
+                res[0][:54,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])/np.abs(truth[:54])[np.newaxis,:])**2))
+                res[1][:54,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])/np.abs(truth[:54])[np.newaxis,:])**2))
+                res[0][54:189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])/np.abs(truth[54:189])[np.newaxis,:])**2))
+                res[1][54:189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])/np.abs(truth[54:189])[np.newaxis,:])**2))
+                res[0][189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))/np.abs(truth[189]))**2))
+                res[1][189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))/np.abs(truth[189]))**2))
             elif model == 2:
                 res[0][:2,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2].mean(axis=0) - truth[:2]
                 res[1][:2,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2] - truth[:2][np.newaxis,:])**2,axis = 0))
