@@ -84,23 +84,25 @@ def main(argv):
     truth = mod.getPars()
     for i in range(3): #dho
         for j in range(3): #r
-            if model == 4:
-                res[0][:54,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])/np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))
-                res[1][:54,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])/np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))
-                res[0][54:189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])/np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0))
-                res[1][54:189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])/np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0))
-                res[0][189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))/np.abs(truth[189]))**2))
-                res[1][189,(i)*3 + j] = np.sqrt(np.mean(((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))/np.abs(truth[189]))**2))
-            elif model == 2:
-                res[0][:2,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2].mean(axis=0) - truth[:2]
-                res[1][:2,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2] - truth[:2][np.newaxis,:])**2,axis = 0))
-                res[0][2:7,(i)*3 + j] = np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]).mean(axis=0)- np.abs(truth[2:7])
-                res[1][2:7,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]) - np.abs(truth[2:7])[np.newaxis,:])**2,axis = 0))
-                res[0][7:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7:].mean(axis=0) - truth[7:]
-                res[1][7:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7] - truth[7])**2))
-            else: 
-                res[0][:,(i)*3 + j] = pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:].mean(axis=0) - truth
-                res[1][:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:] - truth)**2,axis = 0))
+            res[0][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth**2))
+            res[1][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0))    
+            # if model == 4:
+            #     res[0][:54,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth[:54]**2))
+            #     res[1][:54,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))
+            #     res[0][54:189,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth[54:189]**2))
+            #     res[1][54:189,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,54:189]) - np.abs(truth[54:189])[np.newaxis,:])**2,axis = 0))
+            #     res[0][189,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))**2))/np.sqrt(truth[189]**2)
+            #     res[1][189,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,189]) - np.abs(truth[189]))**2))
+            # elif model == 2:
+            #     res[0][:2,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2]) - np.abs(truth[:2])[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth[:2]**2))
+            #     res[1][:2,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:2]) - np.abs(truth[:2])[np.newaxis,:])**2,axis = 0))
+            #     res[0][2:7,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]) - np.abs(truth[2:7])[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth[2:7]**2))
+            #     res[1][2:7,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,2:7]) - np.abs(truth[2:7])[np.newaxis,:])**2,axis = 0))
+            #     res[0][7:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7]) - np.abs(truth[7]))**2))/np.sqrt(truth[7]**2)
+            #     res[1][7:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,7]) - np.abs(truth[7]))**2))
+            # else: 
+            #     res[0][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth**2))
+            #     res[1][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0)) 
     #np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
     if model == 1:
         print1(res)
