@@ -118,7 +118,7 @@ def main(argv):
         for i in range(7):
             res2[0][i,:] = np.mean(res[0][i*27:(i+1)*27,:],axis=0)/np.sqrt(np.mean((truth[i*27:(i+1)*27])**2))
             res2[1][i,:] = np.mean(res[1][i*27:(i+1)*27,:],axis=0)
-        res2[0][7,:] = res[0][189,:]/truth[189,:]
+        res2[0][7,:] = res[0][189,:]/np.sqrt(truth[189]**2)
         res2[1][7,:] = res[1][189,:]
         print4(res2)
     return(True)
