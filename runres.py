@@ -105,20 +105,20 @@ def main(argv):
             #     res[1][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0)) 
     #np.savez(file = modstr[model-1]+"-"+modstr[model-1] + "-results",res = res)
     if model == 1:
-        res[0] = res[0]/np.sqrt(truth**2)
+        res[0] = res[0]/np.sqrt(truth**2)[np.newaxis,:]
         print1(res)
     elif model == 2:
-        res[0] = res[0]/np.sqrt(truth**2)
+        res[0] = res[0]/np.sqrt(truth**2)[np.newaxis,:]
         print2(res)
     elif model == 3:
-        res[0] = res[0]/np.sqrt(truth**2)
+        res[0] = res[0]/np.sqrt(truth**2)[np.newaxis,:]
         print3(res)
     elif model == 4:
         res2 = list([np.zeros((8,9)),np.zeros((8,9))])
         for i in range(7):
-            res2[0][i,:] = res[0][i*27:(i+1)*27,:].mean(axis=0)
+            res2[0][i,:] = res[0][i*27:(i+1)*27,:].mean(axis=0)/truth[i*27:(i+1)*27].mean()
             res2[1][i,:] = res[1][i*27:(i+1)*27,:].mean(axis=0)
-        res2[0][7,:] = res[0][189,:]
+        res2[0][7,:] = res[0][189,:]/truth[189,:]
         res2[1][7,:] = res[1][189,:]
         print4(res2)
     return(True)
