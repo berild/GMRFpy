@@ -84,8 +84,8 @@ def main(argv):
     truth = mod.getPars()
     for i in range(3): #dho
         for j in range(3): #r
-            res[0][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0))
-            res[1][:,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:]) - np.abs(truth)[np.newaxis,:])**2,axis = 0))    
+            res[0][:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:] - truth[np.newaxis,:])**2,axis = 0))
+            res[1][:,(i)*3 + j] = np.sqrt(np.mean((pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:] - truth[np.newaxis,:])**2,axis = 0))    
             # if model == 4:
             #     res[0][:54,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))/np.sqrt(np.mean(truth[:54]**2))
             #     res[1][:54,(i)*3 + j] = np.sqrt(np.mean((np.abs(pars[np.where(((pars[:,npars]==(i+1))&(pars[:,npars+1]==(j+1)))),:npars][0,:,:54]) - np.abs(truth[:54])[np.newaxis,:])**2,axis = 0))
